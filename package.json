@@ -1,0 +1,17 @@
+{
+  "name": "file-tracker",
+  "version": "1.0.0",
+  "description": "Physical file movement tracker with QR codes, request form and admin dashboard",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": { "node": ">=18" },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "exceljs": "^4.4.0",
+    "express": "^4.19.2",
+    "pg": "^8.11.3",
+    "qrcode": "^1.5.4"
+  }
+}

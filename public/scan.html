@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Collect a File · Homeland File Tracker</title>
+<link rel="icon" href="/logo.png">
+<style>
+  :root{--ink:#1c1f26;--mute:#6b7280;--line:#e8e3d4;--bg:#f4f1e8;--card:#fff;--dark:#2f3136;--amber:#f5b82e;--amber-d:#b78100;--ok:#15803d;--bad:#b91c1c;--blue:#1d4ed8}
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(700px 300px at 90% -5%,#fff1bd 0%,transparent 65%),var(--bg);color:var(--ink);font:16px/1.5 "Segoe UI Variable","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;min-height:100vh}
+  header{background:linear-gradient(135deg,#3b3d44,#232529);color:#fff;padding:18px 18px 40px;border-bottom:4px solid var(--amber)}
+  .hin{max-width:520px;margin:0 auto;display:flex;align-items:center;gap:12px}
+  .logoimg{height:24px;width:auto;display:block}
+  .hin{justify-content:space-between}.hin span{white-space:nowrap}
+  .logo{width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,#ffd35c,#f0a500);display:grid;place-items:center;color:#2a2100;box-shadow:0 4px 14px rgba(245,184,46,.4)}
+  .logo svg{width:23px;height:23px}
+  header b{display:block;font-size:18px;line-height:1.15}
+  header span{color:#f5c75a;font-size:11.5px;letter-spacing:.7px;text-transform:uppercase}
+  main{max-width:520px;margin:-26px auto 0;padding:0 16px 30px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;margin-bottom:14px;box-shadow:0 1px 2px rgba(0,0,0,.05),0 12px 30px rgba(0,0,0,.09)}
+  .fileno{font:700 13px ui-monospace,"Cascadia Mono",Consolas,monospace;background:#fff3cc;border:1px solid #f1dc92;color:#5b4300;border-radius:8px;padding:4px 10px;display:inline-block;word-break:break-all}
+  h1{font-size:22px;margin:12px 0 4px;letter-spacing:-.3px;line-height:1.25}
+  .meta{color:var(--mute);font-size:14px}
+  .sub{color:var(--mute);font-size:13.5px;margin-top:2px}
+  .pill{display:inline-flex;align-items:center;gap:7px;border-radius:99px;padding:5px 13px;font-size:13px;font-weight:600;margin-top:12px}
+  .pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+  .p-available{background:#dcfce7;color:var(--ok)} .p-requested{background:#dbeafe;color:var(--blue)} .p-issued{background:#fee2e2;color:var(--bad)}
+  .form-t{display:flex;align-items:center;gap:8px;font-size:17px}
+  label{display:block;font-weight:600;font-size:13.5px;margin:15px 0 6px;color:#3a3d44}
+  label i{color:var(--bad);font-style:normal}
+  input,textarea{width:100%;font:inherit;padding:13px 14px;border:1.5px solid #d6cfba;border-radius:13px;background:#fff;transition:.15s}
+  input:focus,textarea:focus{outline:0;border-color:var(--amber-d);box-shadow:0 0 0 4px rgba(245,184,46,.28)}
+  textarea{min-height:80px;resize:vertical}
+  button{width:100%;margin-top:22px;font-size:16.5px;font-weight:700;font-family:inherit;padding:15px;border:0;border-radius:14px;background:linear-gradient(135deg,#ffd35c,#f0a500);color:#2a2100;cursor:pointer;box-shadow:0 8px 20px rgba(240,165,0,.35);transition:.15s}
+  button:active{transform:scale(.98)}button:disabled{opacity:.6}
+  .err{background:#fee2e2;color:var(--bad);border-radius:11px;padding:11px 13px;margin-top:14px;font-size:14px}
+  .ok{text-align:center}
+  .tick{width:68px;height:68px;border-radius:50%;background:linear-gradient(135deg,#34d399,#15803d);color:#fff;display:grid;place-items:center;font-size:34px;margin:4px auto 12px;box-shadow:0 10px 24px rgba(21,128,61,.35)}
+  .ref{font:800 30px ui-monospace,"Cascadia Mono",Consolas,monospace;letter-spacing:2px;margin:8px 0;background:#f4f1e8;border-radius:12px;padding:8px}
+  .step{background:#fff3cc;border-left:4px solid var(--amber);border-radius:10px;padding:13px 14px;margin-top:16px;text-align:left;font-size:15px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media (max-width:380px){.row2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><div class="hin"><img class="logoimg" src="/logo.png" alt="Homeland"><span>File Tracker</span></div></header>
+<main id="root"><div class="card">Loading…</div></main>
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = (t) => t ? new Date(t).toLocaleString('en-IN', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'}) : '';
+const fileNo = new URLSearchParams(location.search).get('no') || '';
+const KEY = 'ft-person';
+let f = null;
+
+function head() {
+  return `<div class="card"><span class="fileno">${esc(f.fileNo)}</span>
+    <h1>${esc(f.fileName)}</h1>
+    <div class="meta">${esc([f.company, f.project, f.department].filter(Boolean).join(' · '))}${f.location ? ' · Location: ' + esc(f.location) : ''}</div>`;
+}
+function render() {
+  const root = $('#root');
+  if (!f) { root.innerHTML = `<div class="card"><h1>File not found</h1><div class="meta">${esc(window.__err || 'This QR code does not match any file.')}</div></div>`; return; }
+  if (f.custody === 'issued') {
+    root.innerHTML = head() + `<span class="pill p-issued">Not available · Out</span>
+      <p>This file is currently with <b>${esc(f.holderName)}</b>${f.holderDepartment ? ' (' + esc(f.holderDepartment) + ')' : ''} since ${esc(fmt(f.since))}.</p>
+      <p class="meta">You can take it once it has been returned to Admin.</p></div>`;
+    return;
+  }
+  if (f.custody === 'requested') {
+    root.innerHTML = head() + `<span class="pill p-requested">Not available · Request pending</span>
+      <p>Someone has already requested this file and Admin has not handed it over yet.</p>
+      <p class="meta">Please contact Admin.</p></div>`;
+    return;
+  }
+  const saved = JSON.parse(localStorage.getItem(KEY) || '{}');
+  root.innerHTML = head() + `<span class="pill p-available">Available</span></div>
+    <form class="card" id="form" autocomplete="on">
+      <b class="form-t">Your details</b>
+      <div class="sub">Fill these in and submit. The file will be recorded as taken by you.</div>
+      <label>Name <i>*</i></label><input name="name" required maxlength="80" value="${esc(saved.name)}" autocomplete="name">
+      <div class="row2">
+        <div><label>Emp ID <i>*</i></label><input name="empId" required maxlength="40" value="${esc(saved.empId)}"></div>
+        <div><label>Department <i>*</i></label><input name="department" required maxlength="80" value="${esc(saved.department)}"></div>
+      </div>
+      <label>Mob No <i>*</i></label><input name="phone" type="tel" inputmode="tel" required maxlength="20" value="${esc(saved.phone)}" autocomplete="tel">
+      <label>Purpose <span style="font-weight:400;color:var(--mute)">(optional)</span></label><textarea name="purpose" maxlength="300" placeholder="Why do you need this file?"></textarea>
+      <label>Expected return date <span style="font-weight:400;color:var(--mute)">(optional)</span></label><input name="dueDate" type="date" min="${new Date().toISOString().slice(0,10)}">
+      <div id="err"></div>
+      <button id="go">Submit &amp; take file</button>
+    </form>`;
+  $('#form').addEventListener('submit', submit);
+}
+async function submit(e) {
+  e.preventDefault();
+  const btn = $('#go'); btn.disabled = true; btn.textContent = 'Submitting…';
+  const data = Object.fromEntries(new FormData(e.target).entries());
+  data.fileNo = f.fileNo;
+  try {
+    const r = await fetch('/api/public/request', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data)});
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'Something went wrong');
+    localStorage.setItem(KEY, JSON.stringify({name:data.name, empId:data.empId, department:data.department, phone:data.phone}));
+    const out = j.status === 'issued';
+    $('#root').innerHTML = `<div class="card ok"><div class="tick">✓</div>
+      <b>${out ? 'File taken — recorded' : 'Request submitted'}</b><div class="ref">${esc(j.ref)}</div>
+      <div class="meta">${esc(j.fileNo)}<br>${esc(j.fileName)}</div>
+      <div class="step">${out
+        ? `<b>This file is now out in your name.</b><br>Taken on ${esc(fmt(j.at))} by ${esc(data.name)} (${esc(data.department)}). Please return it to Admin when done.`
+        : '<b>Next:</b> go to Admin, show this screen and collect your file. It is yours only after Admin hands it over.'}</div></div>`;
+  } catch (err) {
+    $('#err').innerHTML = `<div class="err">${esc(err.message)}</div>`;
+    btn.disabled = false; btn.textContent = 'Submit & take file';
+  }
+}
+(async () => {
+  try {
+    const r = await fetch('/api/public/file?no=' + encodeURIComponent(fileNo));
+    const j = await r.json();
+    if (r.ok) f = j; else window.__err = j.error;
+  } catch (e) { window.__err = 'Cannot reach the server. Check your Wi-Fi.'; }
+  render();
+})();
+</script>
+</body>
+</html>

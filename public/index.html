@@ -1,0 +1,712 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>File Tracker · Admin</title>
+<link rel="icon" href="/logo.png">
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('ft-theme')||'light'}catch(e){}</script>
+<style>
+  :root{--ink:#1c1f26;--mute:#6b7280;--line:#e8e3d4;--bg:#f4f1e8;--card:#fff;--inbg:#fff;--inline:#d6cfba;--zebra:#fcfaf4;--hover:#fff6d6;--soft:#f1eee3;--glow:#fff4cc;
+    --dark:#2f3136;--amber:#f5b82e;--amber-d:#b78100;
+    --fnobg:#fff3cc;--fnoline:#f1dc92;--fnoink:#5b4300;--qrbg:linear-gradient(135deg,#fffaea,#fff);
+    --ok:#15803d;--ok-l:#dcfce7;--bad:#b91c1c;--bad-l:#fee2e2;--blue:#1d4ed8;--blue-l:#dbeafe;--warn:#8a5a00;--warn-l:#fef0c7;--ret:#555;--ret-l:#ebe9e1;
+    --sh:0 1px 2px rgba(20,20,20,.05),0 8px 24px rgba(20,20,20,.07)}
+  [data-theme=dark]{--ink:#ecebe6;--mute:#9aa0aa;--line:#34363d;--bg:#141519;--card:#1f2127;--inbg:#272a31;--inline:#444852;--zebra:#23262d;--hover:#2f2d1c;--soft:#2c2f36;--glow:#2b2713;
+    --fnobg:#3a3118;--fnoline:#6b5714;--fnoink:#ffd35c;--qrbg:linear-gradient(135deg,#2a2618,#1f2127);
+    --ok:#4ade80;--ok-l:#123222;--bad:#f87171;--bad-l:#3b1619;--blue:#93c5fd;--blue-l:#172554;--warn:#fbbf24;--warn-l:#3a2c0a;--ret:#b5b8bf;--ret-l:#30333a;
+    --sh:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35)}
+  *{box-sizing:border-box}
+  body{margin:0;color:var(--ink);font:14px/1.5 "Segoe UI Variable","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;background:radial-gradient(900px 380px at 85% -8%,var(--glow) 0%,transparent 65%),var(--bg);background-attachment:fixed;-webkit-font-smoothing:antialiased;transition:background .25s,color .25s}
+  .hidden{display:none!important}
+  .ico{width:20px;height:20px;flex:none}
+  /* layout */
+  #app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+  aside{background:linear-gradient(180deg,#383a40 0%,#25272b 100%);color:#e9e5d6;padding:20px 14px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column}
+  .brand{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:2px 8px 20px;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:16px}
+  .brandlogo{width:172px;max-width:100%;display:block}
+  .loginlogo{width:210px;max-width:80%;margin:0 auto 12px;display:block}
+  .logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#ffd35c,#f0a500);display:grid;place-items:center;color:#2a2100;box-shadow:0 4px 14px rgba(245,184,46,.35)}
+  .logo .ico{width:22px;height:22px}
+  .brand b{display:block;font-size:17px;color:#fff;letter-spacing:.2px;line-height:1.15}.brand span{font-size:11.5px;color:#f5c75a;letter-spacing:.6px;text-transform:uppercase}
+  nav button{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:none;border:0;color:#cfcab9;font:inherit;font-weight:500;padding:11px 12px;border-radius:11px;cursor:pointer;margin-bottom:4px;transition:.15s}
+  nav button:hover{background:rgba(255,255,255,.08);color:#fff}
+  nav button.on{background:linear-gradient(135deg,#ffd35c,#f2aa0a);color:#2a2100;font-weight:700;box-shadow:0 6px 16px rgba(245,184,46,.28)}
+  .badge{margin-left:auto;background:#ef4444;color:#fff;border-radius:99px;font-size:11px;font-weight:700;padding:1px 8px;box-shadow:0 0 0 3px rgba(239,68,68,.22)}
+  nav button.on .badge{box-shadow:none}
+  .side-foot{margin-top:auto;padding:10px 4px 0;display:grid;gap:8px}
+  .side-foot button{display:flex;align-items:center;justify-content:center;gap:9px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:#ddd;border-radius:10px;padding:9px 10px;cursor:pointer;width:100%;font:inherit;transition:.15s}
+  .side-foot button:hover{background:rgba(255,255,255,.14)}
+  .side-foot .ico{width:17px;height:17px}
+  main{padding:26px 32px 40px;min-width:0}
+  .ph{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+  h2{margin:0;font-size:26px;letter-spacing:-.4px;line-height:1.15}
+  .ph p{margin:4px 0 0;color:var(--mute)}
+  .phr{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .live{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--mute);background:var(--card);border:1px solid var(--line);border-radius:99px;padding:6px 13px;box-shadow:var(--sh)}
+  .live i{width:8px;height:8px;border-radius:50%;background:#22c55e;animation:pulse 2s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,.6)}70%{box-shadow:0 0 0 8px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+  h3{margin:26px 0 12px;font-size:15.5px;display:flex;align-items:center;gap:9px}
+  h3 small{font-weight:500;color:var(--mute);font-size:12.5px}
+  .dot{width:9px;height:9px;border-radius:3px;background:var(--amber);display:inline-block}
+  :root{--s-in:#2a78d6;--s-out:#eb6834}
+  [data-theme=dark]{--s-in:#3987e5;--s-out:#d95926}
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;box-shadow:var(--sh);transition:.18s}
+  .kpi:hover{transform:translateY(-2px)}
+  .kpi .kt{display:flex;justify-content:space-between;align-items:center;color:var(--mute);font-weight:500}
+  .kpi .ki{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:color-mix(in srgb,var(--kc) 14%,transparent);color:var(--kc)}
+  .kpi b{display:block;font-size:34px;line-height:1.1;letter-spacing:-1px;margin-top:6px}
+  .kpi .kf{font-size:12.5px;color:var(--mute);margin-top:4px}.kpi .kf em{font-style:normal;font-weight:600;color:var(--kc)}
+  .k-tot{--kc:#7c818c}.k-in{--kc:var(--s-in)}.k-out{--kc:var(--s-out)}.k-bad{--kc:#dc2626}.k-new{--kc:#5b6270}
+  .dgrid{display:grid;gap:16px;margin-top:16px}.d2{grid-template-columns:1fr 2fr}.d2b{grid-template-columns:1fr 1fr}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--sh);padding:18px 20px;min-width:0}
+  .ch{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px}
+  .ch h3{margin:0;font-size:15.5px}.ch p{margin:2px 0 0;color:var(--mute);font-size:12.5px}.ch p b{color:var(--ink)}
+  .seg{display:inline-flex;background:var(--soft);border-radius:10px;padding:3px;flex:none}
+  .seg button{border:0;background:none;font:inherit;font-size:12.5px;font-weight:600;color:var(--mute);padding:4px 11px;border-radius:8px;cursor:pointer}
+  .seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.18)}
+  .legend{display:flex;gap:16px;font-size:12.5px;color:var(--mute);margin:2px 0 12px}
+  .sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+  .sw.in,.hs .in,.meter .in{background:var(--s-in)}.sw.out,.hs .out,.meter .out{background:var(--s-out)}
+  .cb{max-height:330px;overflow:auto;padding-right:4px}
+  .hb{display:grid;grid-template-columns:120px 1fr 92px;align-items:center;gap:12px;padding:7px 0}
+  .hl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+  .ht{height:16px}.hs{display:flex;gap:2px;height:100%}.hs span{display:block;min-width:4px}.hs span:last-child{border-radius:0 5px 5px 0}
+  .hv{text-align:right;color:var(--mute);font-size:12.5px;white-space:nowrap}.hv b{color:var(--ink);font-size:14px}
+  .big{font-size:58px;font-weight:700;letter-spacing:-2.5px;line-height:1;margin-top:6px}.big small{font-size:24px;margin-left:2px;color:var(--mute);letter-spacing:0}
+  .meter{display:flex;gap:2px;height:14px;margin:18px 0 16px}.meter span{display:block;min-width:4px}
+  .meter span:first-child{border-radius:7px 0 0 7px}.meter span:last-child{border-radius:0 7px 7px 0}.meter span:only-child{border-radius:7px}
+  .mstats{display:grid;grid-template-columns:1fr 1fr;gap:10px}.mstat{background:var(--soft);border-radius:12px;padding:10px 12px}
+  .mstat small{display:block;color:var(--mute);font-size:12px}.mstat b{font-size:22px;letter-spacing:-.5px}
+  .mv{width:100%;height:auto;display:block}.mv text{fill:var(--mute);font-size:10.5px}.mv .g{stroke:var(--line);stroke-width:1}
+  .mv .t{fill:var(--s-out)}.mv .r{fill:var(--s-in)}.mv .hit{fill:transparent}.mv .hit:hover{fill:color-mix(in srgb,var(--ink) 7%,transparent)}
+  .rt th.num,.rt td.num{text-align:center}.rt tr.tot td{font-weight:700;background:var(--soft);position:sticky;bottom:0;border-top:2px solid var(--line)}
+  .who{display:flex;align-items:center}.av{width:32px;height:32px;border-radius:50%;background:var(--soft);color:var(--ink);display:inline-grid;place-items:center;font-weight:700;font-size:12px;margin-right:10px;flex:none}
+  #tip{position:fixed;z-index:80;pointer-events:none;background:#1c1f26;color:#fff;font-size:12.5px;padding:7px 10px;border-radius:8px;opacity:0;transition:opacity .1s;max-width:260px;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+  /* tiles */
+  .tiles{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+  .tile{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 16px 14px;box-shadow:var(--sh);position:relative;overflow:hidden;transition:.18s}
+  .tile:hover{transform:translateY(-2px)}
+  .tile::after{content:"";position:absolute;right:-26px;top:-26px;width:90px;height:90px;border-radius:50%;background:var(--tc);opacity:.1}
+  .tile .ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,var(--tc) 16%,transparent);color:var(--tc);margin-bottom:12px}
+  .tile small{color:var(--mute);display:block;font-weight:500}.tile b{font-size:32px;line-height:1.1;letter-spacing:-.8px}
+  .t-tot{--tc:#8b8f98}.t-ok{--tc:#16a34a}.t-out{--tc:#e29a00}.t-bad{--tc:#ef4444}.t-new{--tc:#3b82f6}
+  .two{display:grid;grid-template-columns:3fr 2fr;gap:16px;margin-top:6px}
+  .box{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--sh);padding:16px 18px}
+  .box h3{margin:0 0 12px}
+  .feed{display:grid;gap:2px;max-height:330px;overflow:auto}
+  .ev{display:flex;gap:12px;padding:9px 4px;border-bottom:1px solid var(--line);align-items:flex-start}
+  .ev:last-child{border:0}
+  .evi{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;flex:none}
+  .evi .ico{width:16px;height:16px}
+  .e-issued{background:var(--warn-l);color:var(--warn)}.e-returned{background:var(--ok-l);color:var(--ok)}.e-requested{background:var(--blue-l);color:var(--blue)}.e-rejected{background:var(--bad-l);color:var(--bad)}
+  .ev b{font-weight:600}.ev .when{margin-left:auto;white-space:nowrap;color:var(--mute);font-size:12px;padding-left:8px}
+  .rep{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}
+  .repscroll{max-height:340px;overflow:auto}
+  .rt th.num,.rt td.num{text-align:center}
+  .rt tr.tot td{font-weight:700;background:var(--soft);position:sticky;bottom:0;border-top:2px solid var(--line)}
+  .bars{display:grid;gap:13px}
+  .brow .top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px}
+  .track{height:9px;border-radius:99px;background:var(--soft);overflow:hidden}
+  .fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#ffd35c,#e29a00)}
+  /* tables */
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:auto;box-shadow:var(--sh)}
+  .panel.scroll{max-height:calc(100vh - 255px);min-height:260px}
+  table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
+  th{background:var(--dark);color:#fff;text-align:left;font-weight:600;font-size:12.5px;letter-spacing:.3px;padding:12px 10px;white-space:nowrap;position:sticky;top:0;z-index:3;border-bottom:3px solid var(--amber);user-select:none}
+  th.sort{cursor:pointer}th.sort:hover{background:#40434a}
+  th .ar{opacity:.5;margin-left:4px;font-size:10px}th.cur .ar{opacity:1;color:var(--amber)}
+  td{padding:11px 10px;border-top:1px solid var(--line);vertical-align:middle;white-space:nowrap;background:var(--card)}
+  td.wrap{white-space:normal;min-width:170px;max-width:280px}
+  table tr:nth-child(even) td{background:var(--zebra)}
+  table tr:hover td{background:var(--hover)}
+  /* frozen columns: Sr. No + File No */
+  th.c1,td.c1{position:sticky;left:0;z-index:2;width:88px;min-width:88px;max-width:88px}
+  th.c2,td.c2{position:sticky;left:88px;z-index:2;box-shadow:8px 0 10px -8px rgba(0,0,0,.35)}
+  th.c1,th.c2{z-index:5}
+  td.mono,.mono{font:12.5px ui-monospace,"Cascadia Mono",Consolas,monospace}
+  .fno{font:600 12.5px ui-monospace,"Cascadia Mono",Consolas,monospace;white-space:nowrap;color:var(--ink)}
+  .sr{font-weight:700;font-size:13.5px;color:var(--ink)}
+  .empty{padding:38px 20px;text-align:center;color:var(--mute)}
+  .empty b{display:block;color:var(--ink);font-size:15px;margin-bottom:2px}
+  .sub{color:var(--mute);font-size:12.5px}
+  .tag{display:inline-flex;align-items:center;gap:6px;border-radius:99px;padding:3px 11px;font-size:12px;font-weight:600;white-space:nowrap}
+  .tag::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+  .g-available,.g-in{background:var(--ok-l);color:var(--ok)}.g-requested{background:var(--blue-l);color:var(--blue)}.g-issued,.g-out{background:var(--warn-l);color:var(--warn)}
+  .g-returned{background:var(--ret-l);color:var(--ret)}.g-rejected,.g-overdue,.g-na{background:var(--bad-l);color:var(--bad)}
+  /* controls */
+  .bar{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px;align-items:center}
+  input,select,textarea{font:inherit;color:var(--ink);padding:9px 12px;border:1px solid var(--inline);border-radius:11px;background:var(--inbg);max-width:100%;transition:.15s}
+  input:focus,select:focus,textarea:focus{outline:0;border-color:var(--amber-d);box-shadow:0 0 0 4px rgba(245,184,46,.25)}
+  .search{position:relative}.search .ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:17px;height:17px;color:var(--mute)}.search input{padding-left:36px;min-width:250px}
+  .btn{display:inline-flex;align-items:center;gap:7px;font:inherit;font-weight:600;padding:9px 15px;border-radius:11px;border:1px solid var(--inline);background:var(--card);cursor:pointer;white-space:nowrap;transition:.15s;text-decoration:none;color:var(--ink)}
+  .btn .ico{width:16px;height:16px}
+  .btn:hover{background:var(--soft);transform:translateY(-1px);box-shadow:0 4px 10px rgba(0,0,0,.12)}
+  .btn.pri{background:linear-gradient(135deg,#ffd35c,#f0a500);color:#2a2100;border-color:#e09a00}.btn.pri:hover{background:#f5b82e}
+  .btn.go{background:linear-gradient(135deg,#22a35a,#15803d);color:#fff;border-color:#15803d}.btn.go:hover{background:#136d34}
+  .btn.del{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,transparent)}
+  .btn.sm{padding:5px 11px;font-size:12.5px;border-radius:9px}
+  .grow{flex:1}
+  .more{display:block;margin:12px auto}
+  .count{color:var(--mute);font-size:12.5px}
+  .switch{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--soft)}
+  .switch input{width:20px;height:20px;margin-top:2px;accent-color:#e29a00;flex:none}
+  /* modal */
+  #modal{position:fixed;inset:0;background:rgba(18,18,20,.6);backdrop-filter:blur(4px);display:flex;align-items:flex-start;justify-content:center;padding:5vh 14px;overflow:auto;z-index:20;animation:fade .15s}
+  @keyframes fade{from{opacity:0}}
+  .sheet{background:var(--card);border-radius:20px;width:min(780px,100%);padding:24px 26px;box-shadow:0 30px 80px rgba(0,0,0,.4);animation:rise .2s}
+  @keyframes rise{from{transform:translateY(14px);opacity:0}}
+  .sheet.narrow{width:min(470px,100%)}
+  .sheet h2{display:flex;justify-content:space-between;align-items:center;font-size:21px;margin-bottom:12px}
+  .x{background:var(--soft);color:var(--ink);border:0;width:32px;height:32px;border-radius:50%;font-size:20px;cursor:pointer;line-height:1;transition:.15s}.x:hover{background:var(--line)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}
+  .grid2 label,.f label{display:block;font-weight:600;font-size:12.5px;margin-bottom:4px}
+  .grid2 input,.grid2 select,.f input,.f textarea{width:100%}
+  .span2{grid-column:1/-1}
+  .actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}
+  .qrbox{display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;background:var(--qrbg);border:1px solid var(--fnoline);border-radius:16px;padding:16px}
+  .qrbox img{width:190px;height:190px;border:1px solid var(--line);border-radius:14px;padding:8px;background:#fff;box-shadow:var(--sh)}
+  .kv{display:grid;grid-template-columns:105px 1fr;gap:6px 10px;margin:0}.kv dt{color:var(--mute)}.kv dd{margin:0;word-break:break-word}
+  .hist{border-left:3px solid var(--amber);margin:8px 0 0 6px;padding-left:16px}
+  .hist div{margin-bottom:12px}
+  /* login */
+  #login{position:fixed;inset:0;background:radial-gradient(800px 500px at 20% 10%,#4a4c54 0%,#222428 70%);display:grid;place-items:center;z-index:50}
+  #login form{background:var(--card);border-radius:22px;padding:32px 30px 28px;width:min(380px,92vw);box-shadow:0 30px 90px rgba(0,0,0,.5);text-align:center}
+  #login .logo{margin:0 auto 14px;width:56px;height:56px;border-radius:16px}#login .logo .ico{width:30px;height:30px}
+  #login h2{font-size:24px}#login input{width:100%;margin:16px 0 4px;text-align:center;font-size:16px;letter-spacing:3px}#login .btn{width:100%;justify-content:center;margin-top:8px;padding:11px}
+  .msg{color:var(--bad);min-height:20px;font-size:13px;margin-top:6px}
+  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(10px);background:#222;color:#fff;padding:11px 20px;border-radius:12px;z-index:60;opacity:0;transition:.25s;pointer-events:none;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  #toast.on{opacity:1;transform:translateX(-50%)}
+  /* labels (always light so they print well) */
+  .labels{display:grid;grid-template-columns:repeat(auto-fill,minmax(235px,1fr));gap:12px}
+  .label{background:#fff;color:#111;border:1.5px dashed #b9b19a;border-radius:12px;padding:10px;display:flex;gap:11px;align-items:center;break-inside:avoid;box-shadow:var(--sh)}
+  .label img{width:88px;height:88px;flex:none}
+  .label b{display:block;font:700 12.5px ui-monospace,Consolas,monospace;word-break:break-all;margin-bottom:2px}
+  .label span{font-size:12px;display:block;line-height:1.3}
+  #printOnly{display:none}
+  @media (max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}.d2,.d2b{grid-template-columns:1fr}}
+  @media (max-width:980px){
+    #app{grid-template-columns:1fr}
+    aside{position:static;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;gap:6px;padding:10px 12px}
+    .brand{border:0;padding:0 8px 0 0;margin:0;flex-direction:row;align-items:center}.brandlogo{width:110px}.brand span{display:none}nav{display:flex;flex-wrap:wrap}nav button{width:auto;margin:0;padding:8px 11px}.nl,.tl{display:none}
+    .side-foot{margin:0 0 0 auto;padding:0;display:flex}.side-foot button{width:auto}
+    .kpis{grid-template-columns:repeat(2,1fr)}main{padding:16px 14px 30px}.hb{grid-template-columns:90px 1fr 80px}
+    .grid2{grid-template-columns:1fr}.search input{min-width:0;width:100%}.search{flex:1 1 100%}
+    .panel.scroll{max-height:70vh}
+  }
+  @media print{
+    body{background:#fff}#app,#modal,#toast,#login{display:none!important}
+    #printOnly{display:block}
+    #printOnly .labels{grid-template-columns:repeat(3,1fr);gap:6px}
+    .label{border:1px solid #000;box-shadow:none;border-radius:4px}
+    @page{margin:10mm}
+  }
+</style>
+</head>
+<body>
+<div id="login" class="hidden">
+  <form id="loginForm">
+    <img class="loginlogo" src="/logo.png" alt="Homeland"><h2>File Tracker</h2><div class="sub">Homeland Group · Sign in</div>
+    <input id="uid" placeholder="User ID" autofocus autocomplete="username" style="letter-spacing:0;margin-bottom:0"><input id="pin" type="password" placeholder="Password" autocomplete="current-password" style="letter-spacing:0;margin-top:10px">
+    <div class="msg" id="loginMsg"></div>
+    <button class="btn pri">Sign in</button>
+  </form>
+</div>
+
+<div id="app" class="hidden">
+  <aside>
+    <div class="brand"><img class="brandlogo" src="/logo.png" alt="Homeland"><span>File Tracker</span></div>
+    <nav id="nav"></nav>
+    <div class="side-foot"><div class="sub" id="ver" style="text-align:center;color:#8d8a7d;font-size:11px"></div><div class="sub" id="who" style="text-align:center;color:#cfcab9;font-size:12px;margin-bottom:8px"></div><button id="logout">Sign out</button></div>
+  </aside>
+  <main id="view"></main>
+</div>
+<div id="modal" class="hidden"></div>
+<div id="printOnly"></div>
+<div id="toast"></div>
+<input type="file" id="importFile" accept=".xlsx,.csv" class="hidden">
+
+<script>
+const IC = {
+  dashboard:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  files:'<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/>',
+  log:'<path d="M4 6h16M4 12h16M4 18h10"/>',
+  labels:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h3M20 17v4"/>',
+  settings:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
+  folder:'<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  check:'<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  out:'<circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M17 9h5m0 0-2-2m2 2-2 2"/>',
+  back:'<path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/>',
+  x:'<circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/>',
+  alert:'<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.01"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  up:'<path d="M12 16V4m0 0l-4 4m4-4l4 4M4 20h16"/>',
+  down:'<path d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16"/>',
+  print:'<path d="M7 9V3h10v6M7 17H4v-6h16v6h-3M7 14h10v7H7z"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/>',
+  moon:'<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/>',
+  refresh:'<path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/>',
+  logout:'<path d="M9 4H5v16h4M16 8l4 4-4 4M20 12H9"/>'
+};
+const ico = (n) => `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${IC[n]}</svg>`;
+const themeLabel = () => document.documentElement.dataset.theme === 'dark' ? `${ico('sun')}Light mode` : `${ico('moon')}Dark mode`;
+const pageHead = (t, sub, right = '') => `<div class="ph"><div><h2>${t}</h2><p>${sub}</p></div><div class="phr">${right}<button class="btn themeTop" type="button" title="Switch between light and dark">${themeLabel()}</button></div></div>`;
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = (t) => t ? new Date(t).toLocaleString('en-IN', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'}) : '—';
+const fmtD = (d) => d ? new Date(d + 'T00:00').toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'}) : '—';
+const ago = (t) => { const m = Math.floor((Date.now() - new Date(t)) / 6e4); if (m < 1) return 'just now'; if (m < 60) return m + ' min ago'; const h = Math.floor(m / 60); if (h < 24) return h + ' hr ago'; return Math.floor(h / 24) + ' d ago'; };
+const daysOut = (t) => Math.max(0, Math.floor((Date.now() - new Date(t)) / 864e5));
+const localDay = (d) => { const p = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; };
+const today = () => localDay(new Date());
+const LABEL = {available:'Available', requested:'Requested', issued:'Out', returned:'Returned', rejected:'Rejected'};
+const tag = (k, label) => `<span class="tag g-${k}">${esc(label || LABEL[k] || k)}</span>`;
+const inOut = (f) => f.custody === 'available' ? tag('in', 'In') : tag('out', 'Out');
+const custodyTag = (f) => f.custody === 'available' ? tag('available', 'Available') : tag('na', 'Not Available');
+
+const S = { tab: 'dashboard', files: [], moves: [], sum: {}, sr: new Map(), at: new Date(), filt: {q:'', project:'', department:'', custody:''}, sort: {k:'sr', dir:1}, limit: 100, logq: '', logs: '', settings: {} };
+const TABS = [['dashboard','Dashboard'],['files','Files'],['log','Movement Log'],['labels','QR Labels'],['users','Users'],['settings','Settings']];
+let ME = null;
+
+/* ---- theme (light / dark) */
+function applyTheme(t) {
+  document.documentElement.dataset.theme = t;
+  try { localStorage.setItem('ft-theme', t); } catch (e) {}
+  document.querySelectorAll('.themeTop').forEach((b) => { b.innerHTML = themeLabel(); });
+}
+const toggleTheme = () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+document.addEventListener('click', (e) => { if (e.target.closest('.themeTop')) toggleTheme(); });
+applyTheme(document.documentElement.dataset.theme || 'light');
+$('#logout').innerHTML = `${ico('logout')}<span class="tl">Sign out</span>`;
+
+async function api(url, opts = {}) {
+  const o = {credentials: 'same-origin', ...opts};
+  if (o.body && typeof o.body !== 'string' && !(o.body instanceof Blob)) { o.body = JSON.stringify(o.body); o.headers = {'Content-Type': 'application/json', ...(o.headers || {})}; }
+  const r = await fetch(url, o);
+  if (r.status === 401 && !url.includes('/login')) { showLogin(); throw new Error('Please sign in'); }
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || 'Request failed');
+  return j;
+}
+function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('on'), 2600); }
+function showLogin() { $('#app').classList.add('hidden'); $('#login').classList.remove('hidden'); $('#uid').focus(); }
+function openModal(html, narrow) { const m = $('#modal'); m.innerHTML = `<div class="sheet ${narrow ? 'narrow' : ''}">${html}</div>`; m.classList.remove('hidden'); }
+function closeModal() { $('#modal').classList.add('hidden'); $('#modal').innerHTML = ''; }
+$('#modal').addEventListener('mousedown', (e) => { if (e.target.id === 'modal') closeModal(); });
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeModal();
+  const box = $('#fq') || $('#lq');
+  if (e.key === '/' && box && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) { e.preventDefault(); box.focus(); }
+});
+
+/* ---------------- data */
+async function load(quiet) {
+  try {
+    const [files, moves, sum, settings] = await Promise.all([api('/api/admin/files'), api('/api/admin/movements'), api('/api/admin/summary'), api('/api/admin/settings')]);
+    S.files = files; S.moves = moves; S.sum = sum; S.settings = settings;
+    S.sr = new Map(files.map((f, i) => [f.id, i + 1])); S.at = new Date();
+    if (!quiet || $('#modal').classList.contains('hidden')) render(); else renderNav();
+  } catch (e) { if (!quiet) toast(e.message); }
+}
+function renderNav() {
+  $('#nav').innerHTML = TABS.filter(([k]) => k !== 'users' || (ME && ME.role === 'admin')).map(([k, l]) => `<button data-tab="${k}" class="${S.tab === k ? 'on' : ''}">${ico(k)}<span class="nl">${l}</span>${k === 'dashboard' && S.sum.requested ? `<span class="badge">${S.sum.requested}</span>` : ''}</button>`).join('');
+}
+function render() { renderNav(); ({dashboard: vDashboard, files: vFiles, log: vLog, labels: vLabels, settings: vSettings, users: vUsers})[S.tab](); }
+$('#nav').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { S.tab = b.dataset.tab; S.limit = 100; render(); } });
+const srOfNo = (no) => { const f = S.files.find((x) => x.fileNo === no); return f ? S.sr.get(f.id) : '—'; };
+
+/* ---------------- dashboard */
+function events() {
+  const ev = [];
+  for (const m of S.moves) {
+    if (m.status === 'issued' || m.status === 'returned') ev.push({t: m.issuedAt, k: 'issued', m});
+    if (m.status === 'returned') ev.push({t: m.returnedAt, k: 'returned', m});
+    if (m.status === 'requested') ev.push({t: m.requestedAt, k: 'requested', m});
+    if (m.status === 'rejected') ev.push({t: m.returnedAt, k: 'rejected', m});
+  }
+  return ev.sort((a, b) => new Date(b.t) - new Date(a.t));
+}
+const EV = {issued: ['out', 'took'], returned: ['back', 'returned'], requested: ['clock', 'requested'], rejected: ['x', 'was refused']};
+S.repView = {department: 'chart', location: 'chart'};
+function groupReport(key) {
+  const g = {};
+  for (const f of S.files) { const k = f[key] || '—'; const r = (g[k] = g[k] || {n: 0, i: 0, o: 0}); r.n++; if (f.custody === 'available') r.i++; else r.o++; }
+  const rows = Object.entries(g).sort((a, b) => b[1].o - a[1].o || b[1].n - a[1].n || a[0].localeCompare(b[0]));
+  const t = rows.reduce((x, [, r]) => ({n: x.n + r.n, i: x.i + r.i, o: x.o + r.o}), {n: 0, i: 0, o: 0});
+  return {rows, t};
+}
+function reportCard(title, key, label) {
+  const {rows, t} = groupReport(key);
+  const max = Math.max(1, ...rows.map(([, r]) => r.n));
+  const view = S.repView[key];
+  const bars = rows.length ? rows.map(([k, r]) => `<div class="hb" data-tip="${esc(k)}: ${r.o} out · ${r.i} in (total ${r.n})">
+      <div class="hl">${esc(k)}</div>
+      <div class="ht"><div class="hs" style="width:${(r.n / max * 100).toFixed(1)}%">${r.i ? `<span class="in" style="flex:${r.i}"></span>` : ''}${r.o ? `<span class="out" style="flex:${r.o}"></span>` : ''}</div></div>
+      <div class="hv"><b>${r.o}</b> out / ${r.n}</div></div>`).join('') : '<div class="empty">No files yet.</div>';
+  const table = `<table class="rt"><thead><tr><th>${label}</th><th class="num">Total</th><th class="num">In</th><th class="num">Out</th></tr></thead><tbody>${rows.map(([k, r]) => `
+      <tr><td><b style="font-weight:600">${esc(k)}</b></td><td class="num">${r.n}</td><td class="num"><span class="tag g-in">${r.i}</span></td><td class="num"><span class="tag ${r.o ? 'g-out' : 'g-returned'}">${r.o}</span></td></tr>`).join('')}
+      <tr class="tot"><td>Total</td><td class="num">${t.n}</td><td class="num">${t.i}</td><td class="num">${t.o}</td></tr></tbody></table>`;
+  return `<section class="card"><header class="ch"><div><h3>${title}</h3><p>${t.n} files · <b>${t.o}</b> out · ${t.i} in</p></div>
+    <div class="seg" data-key="${key}"><button class="${view === 'chart' ? 'on' : ''}" data-view="chart">Chart</button><button class="${view === 'table' ? 'on' : ''}" data-view="table">Table</button></div></header>
+    ${view === 'chart' ? '<div class="legend"><span><i class="sw in"></i>In (Available)</span><span><i class="sw out"></i>Out</span></div>' : ''}
+    <div class="cb">${view === 'chart' ? bars : table}</div></section>`;
+}
+function movementCard() {
+  const days = [];
+  for (let i = 13; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); days.push({k: localDay(d), d}); }
+  const taken = {}, ret = {};
+  days.forEach(({k}) => { taken[k] = 0; ret[k] = 0; });
+  for (const m of S.moves) {
+    if (m.issuedAt) { const k = localDay(new Date(m.issuedAt)); if (k in taken) taken[k]++; }
+    if (m.status === 'returned' && m.returnedAt) { const k = localDay(new Date(m.returnedAt)); if (k in ret) ret[k]++; }
+  }
+  const sumT = days.reduce((a, {k}) => a + taken[k], 0), sumR = days.reduce((a, {k}) => a + ret[k], 0);
+  const mx = Math.max(4, ...days.map(({k}) => Math.max(taken[k], ret[k])));
+  const top = mx <= 4 ? 4 : Math.ceil(mx / 4) * 4;
+  const W = 640, H = 236, L = 32, R = 6, T = 12, B = 30, pw = W - L - R, ph = H - T - B, gw = pw / 14, bw = Math.min(14, gw * 0.3);
+  const y = (v) => T + ph - (v / top) * ph;
+  const bar = (x, v, cls) => {
+    if (!v) return '';
+    const h = ph - (y(v) - T), r = Math.min(3, h / 2);
+    return `<path class="${cls}" d="M${x.toFixed(1)},${y(0).toFixed(1)} V${(y(v) + r).toFixed(1)} q0,${-r} ${r},${-r} h${(bw - 2 * r).toFixed(1)} q${r},0 ${r},${r} V${y(0).toFixed(1)} z"/>`;
+  };
+  let svg = '';
+  for (let i = 0; i <= 4; i++) { const v = (top / 4) * i; svg += `<line class="g" x1="${L}" x2="${W - R}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}"/><text x="${L - 7}" y="${(y(v) + 3.5).toFixed(1)}" text-anchor="end">${v}</text>`; }
+  days.forEach(({k, d}, i) => {
+    const cx = L + gw * i + gw / 2;
+    svg += bar(cx - bw - 1, taken[k], 't') + bar(cx + 1, ret[k], 'r');
+    if (i % 2 === 1 || i === 13) svg += `<text x="${cx.toFixed(1)}" y="${H - 9}" text-anchor="middle">${d.toLocaleDateString('en-IN', {day: '2-digit', month: 'short'})}</text>`;
+    svg += `<rect class="hit" x="${(L + gw * i).toFixed(1)}" y="${T}" width="${gw.toFixed(1)}" height="${ph}" data-tip="${esc(d.toLocaleDateString('en-IN', {weekday: 'short', day: '2-digit', month: 'short'}))} — Taken ${taken[k]} · Returned ${ret[k]}"/>`;
+  });
+  return `<section class="card"><header class="ch"><div><h3>File movement · last 14 days</h3><p>Taken <b>${sumT}</b> · Returned <b>${sumR}</b></p></div></header>
+    <div class="legend"><span><i class="sw out"></i>Taken</span><span><i class="sw in"></i>Returned</span></div>
+    <svg class="mv" viewBox="0 0 ${W} ${H}" role="img" aria-label="Files taken and returned per day for the last 14 days">${svg}</svg></section>`;
+}
+function vDashboard() {
+  const s = S.sum;
+  const total = s.total ?? 0, avail = s.available ?? 0, outN = total - avail;
+  const pct = (n) => (total ? Math.round((n / total) * 100) : 0);
+  const pend = S.moves.filter((m) => m.status === 'requested').reverse();
+  const out = S.files.filter((f) => f.custody === 'issued').sort((a, b) => new Date(a.issuedAt) - new Date(b.issuedAt));
+  const td = today();
+  const tookToday = S.moves.filter((m) => m.issuedAt && localDay(new Date(m.issuedAt)) === td).length;
+  const retToday = S.moves.filter((m) => m.status === 'returned' && m.returnedAt && localDay(new Date(m.returnedAt)) === td).length;
+  const nDep = new Set(S.files.map((f) => f.department).filter(Boolean)).size, nLoc = new Set(S.files.map((f) => f.location).filter(Boolean)).size;
+  const dateTxt = new Date().toLocaleDateString('en-IN', {weekday: 'long', day: '2-digit', month: 'long', year: 'numeric'});
+  const kpi = (cls, icon, label, val, foot) => `<div class="kpi ${cls}"><div class="kt"><span>${label}</span><span class="ki">${ico(icon)}</span></div><b>${val}</b><div class="kf">${foot}</div></div>`;
+  $('#view').innerHTML = pageHead('Dashboard', `${dateTxt} · where every file is, and who has it`, `<button class="btn" data-act="refresh" type="button">${ico('refresh')}Refresh</button><div class="live"><i></i>Live · ${S.at.toLocaleTimeString('en-IN', {hour: '2-digit', minute: '2-digit'})}</div>`) + `
+  <div class="kpis">
+    ${kpi('k-tot', 'folder', 'Total files', total, `${nDep} department${nDep === 1 ? '' : 's'} · ${nLoc} location${nLoc === 1 ? '' : 's'}`)}
+    ${kpi('k-in', 'check', 'Available (In)', avail, `<em>${pct(avail)}%</em> of the register`)}
+    ${kpi('k-out', 'out', 'Out with people', outN, `<em>${pct(outN)}%</em> of the register`)}
+    ${kpi('k-bad', 'alert', 'Overdue', s.overdue ?? 0, s.overdue ? '<em>Needs follow-up</em>' : 'Everything on time')}
+    ${kpi('k-new', 'clock', 'Taken today', tookToday, `Returned today: <em>${retToday}</em>`)}
+  </div>
+  ${pend.length || S.settings.requireApproval ? `<section class="card" style="margin-top:16px"><header class="ch"><div><h3>Awaiting your approval</h3><p>Admin approval is switched on in Settings</p></div></header>
+  <div class="panel" style="box-shadow:none">${pend.length ? `<table><tr><th>Sr. No</th><th>File</th><th>Requested by</th><th>Purpose</th><th>Requested</th><th></th></tr>${pend.map((m) => `
+    <tr><td><span class="sr">${m.ref}</span></td>
+    <td><span class="fno">${esc(m.fileNo)}</span><div class="sub" style="margin-top:3px">${esc(m.fileName)}</div></td>
+    <td><b>${esc(m.person.name)}</b><div class="sub">${esc(m.person.department)} · ID ${esc(m.person.empId)} · ${esc(m.person.phone)}</div></td>
+    <td>${esc(m.person.purpose) || '—'}</td><td>${fmt(m.requestedAt)}</td>
+    <td><button class="btn go sm" data-act="handover" data-id="${m.id}">Hand over</button> <button class="btn del sm" data-act="reject" data-id="${m.id}">Reject</button></td></tr>`).join('')}</table>` : '<div class="empty"><b>Nothing waiting</b></div>'}</div></section>` : ''}
+  <div class="dgrid d2b">${reportCard('Department-wise report', 'department', 'Department')}${reportCard('Location-wise report', 'location', 'Location')}</div>
+  <section class="card" style="margin-top:16px;padding-bottom:6px"><header class="ch"><div><h3>Files currently out</h3><p>${out.length} file${out.length === 1 ? '' : 's'} with people right now</p></div></header>
+  <div class="panel" style="box-shadow:none;border:0">${out.length ? `<table><tr><th>Sr. No</th><th>File</th><th>Taken by</th><th>Mob No</th><th>Taken on</th><th>Days out</th><th>Return by</th><th></th></tr>${out.map((f) => { const d = daysOut(f.issuedAt); const ini = (f.holder.name || '?').split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase(); return `
+    <tr><td><span class="sr">${S.sr.get(f.id)}</span></td><td><span class="fno">${esc(f.fileNo)}</span><div class="sub" style="margin-top:3px">${esc(f.fileName)}</div></td>
+    <td><div class="who"><span class="av">${esc(ini)}</span><div><b>${esc(f.holder.name)}</b><div class="sub">${esc(f.holder.department)} · ID ${esc(f.holder.empId) || '—'}</div></div></div></td><td>${esc(f.holder.phone)}</td>
+    <td>${fmt(f.issuedAt)}</td><td><span class="tag ${f.overdue ? 'g-overdue' : d >= 3 ? 'g-out' : 'g-in'}">${d} day${d === 1 ? '' : 's'}</span></td>
+    <td>${fmtD(f.dueDate)} ${f.overdue ? tag('overdue', 'Overdue') : ''}</td>
+    <td><button class="btn sm" data-act="return" data-id="${f.txnId}">Mark returned</button></td></tr>`; }).join('')}</table>` : '<div class="empty"><b>Everything is in</b>All files are available.</div>'}</div></section>`;
+}
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('.seg button'); if (!b) return;
+  S.repView[b.parentElement.dataset.key] = b.dataset.view; vDashboard();
+});
+const tipEl = document.createElement('div'); tipEl.id = 'tip'; document.body.appendChild(tipEl);
+document.addEventListener('mousemove', (e) => {
+  const t = e.target.closest && e.target.closest('[data-tip]');
+  if (!t) { tipEl.style.opacity = 0; return; }
+  tipEl.textContent = t.dataset.tip; tipEl.style.opacity = 1;
+  tipEl.style.left = Math.max(8, Math.min(e.clientX + 14, innerWidth - tipEl.offsetWidth - 10)) + 'px';
+  tipEl.style.top = (e.clientY + 18) + 'px';
+});
+$('#view').addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const id = b.dataset.id, act = b.dataset.act;
+  if (act === 'refresh') { await load(); toast('Refreshed'); }
+  else if (act === 'handover') handoverForm(id);
+  else if (act === 'reject') askText('Reject request', 'Reason (optional)', 'Reject', async (v) => { await api(`/api/admin/movements/${id}/reject`, {method: 'POST', body: {reason: v}}); toast('Request rejected'); load(); });
+  else if (act === 'return') askText('Mark file returned', 'Remarks (optional, e.g. condition)', 'Mark returned', async (v) => { await api(`/api/admin/movements/${id}/return`, {method: 'POST', body: {remarks: v}}); toast('File is back — now Available'); load(); });
+  else if (act === 'file') openFile(Number(id));
+});
+function handoverForm(id) {
+  const m = S.moves.find((x) => x.id == id);
+  openModal(`<h2>Hand over file <button class="x" onclick="closeModal()">×</button></h2>
+    <p><span class="fno">${esc(m.fileNo)}</span> ${esc(m.fileName)}<br>to <b>${esc(m.person.name)}</b> (${esc(m.person.department)}, ${esc(m.person.phone)})</p>
+    <div class="f"><label>Handed over by (Admin name)</label><input id="hb" value="${esc(localStorage.getItem('ft-admin') || '')}">
+    <label style="margin-top:10px">Return by</label><input id="hd" type="date" min="${today()}" value="${esc(m.dueDate)}"></div>
+    <div class="msg" id="mm"></div>
+    <div class="actions"><button class="btn go" id="ok">Confirm handover</button><button class="btn" onclick="closeModal()">Cancel</button></div>`, true);
+  $('#ok').onclick = async () => {
+    try {
+      const by = $('#hb').value.trim(); localStorage.setItem('ft-admin', by);
+      await api(`/api/admin/movements/${id}/issue`, {method: 'POST', body: {issuedBy: by, dueDate: $('#hd').value}});
+      closeModal(); toast('File handed over'); load();
+    } catch (e) { $('#mm').textContent = e.message; }
+  };
+}
+function askText(title, label, okLabel, fn) {
+  openModal(`<h2>${esc(title)} <button class="x" onclick="closeModal()">×</button></h2>
+    <div class="f"><label>${esc(label)}</label><input id="tx"></div><div class="msg" id="mm"></div>
+    <div class="actions"><button class="btn pri" id="ok">${esc(okLabel)}</button><button class="btn" onclick="closeModal()">Cancel</button></div>`, true);
+  $('#tx').focus();
+  $('#ok').onclick = async () => { try { await fn($('#tx').value); closeModal(); } catch (e) { $('#mm').textContent = e.message; } };
+}
+
+/* ---------------- files */
+const uniq = (k) => [...new Set(S.files.map((f) => f[k]).filter(Boolean))].sort();
+function filtered() {
+  const q = S.filt.q.toLowerCase();
+  return S.files.filter((f) =>
+    (!S.filt.project || f.project === S.filt.project) && (!S.filt.department || f.department === S.filt.department) &&
+    (!S.filt.custody || (S.filt.custody === 'available' ? f.custody === 'available' : f.custody !== 'available')) &&
+    (!q || [f.fileNo, f.fileName, f.company, f.project, f.department, f.location, f.holder && f.holder.name, f.holder && f.holder.empId].join(' ').toLowerCase().includes(q)));
+}
+const opts = (list, cur, all) => `<option value="">${all}</option>` + list.map((v) => `<option ${v === cur ? 'selected' : ''}>${esc(v)}</option>`).join('');
+const SORTS = {
+  sr: (f) => S.sr.get(f.id), fileNo: (f) => f.fileNo, fileName: (f) => f.fileName, cp: (f) => f.company + ' ' + f.project,
+  department: (f) => f.department, location: (f) => f.location, status: (f) => (f.custody === 'available' ? 0 : 1),
+};
+const nat = new Intl.Collator('en', {numeric: true, sensitivity: 'base'});
+function sorted(rows) {
+  const fn = SORTS[S.sort.k] || SORTS.sr, d = S.sort.dir;
+  return rows.slice().sort((a, b) => { const x = fn(a), y = fn(b); return (typeof x === 'number' && typeof y === 'number' ? x - y : nat.compare(String(x), String(y))) * d; });
+}
+function vFiles() {
+  $('#view').innerHTML = pageHead('Files', `<span id="fcount"></span>`) + `
+  <div class="bar">
+    <div class="search">${ico('search')}<input id="fq" placeholder="Search file, person, emp id…  ( press / )" value="${esc(S.filt.q)}"></div>
+    <select id="fp">${opts(uniq('project'), S.filt.project, 'All projects')}</select>
+    <select id="fd">${opts(uniq('department'), S.filt.department, 'All departments')}</select>
+    <select id="fc"><option value="">All custody</option><option value="available" ${S.filt.custody === 'available' ? 'selected' : ''}>Available</option><option value="out" ${S.filt.custody === 'out' ? 'selected' : ''}>Not Available (Out)</option></select>
+    <span class="grow"></span>
+    <button class="btn" id="bImp">${ico('up')}Import</button><a class="btn" href="/api/admin/export">${ico('down')}Export Excel</a>
+    <button class="btn pri" id="bAdd">${ico('plus')}Add file</button>
+  </div>
+  <div class="panel scroll" id="ftable"></div>`;
+  $('#fq').oninput = (e) => { S.filt.q = e.target.value; S.limit = 100; fileRows(); };
+  $('#fp').onchange = (e) => { S.filt.project = e.target.value; S.limit = 100; fileRows(); };
+  $('#fd').onchange = (e) => { S.filt.department = e.target.value; S.limit = 100; fileRows(); };
+  $('#fc').onchange = (e) => { S.filt.custody = e.target.value; S.limit = 100; fileRows(); };
+  $('#bAdd').onclick = () => fileForm();
+  $('#bImp').onclick = () => $('#importFile').click();
+  fileRows();
+}
+const th = (k, l, cls = '') => `<th class="sort ${cls} ${S.sort.k === k ? 'cur' : ''}" data-sort="${k}">${l}<span class="ar">${S.sort.k === k ? (S.sort.dir > 0 ? '▲' : '▼') : '↕'}</span></th>`;
+function fileRows() {
+  const all = sorted(filtered()), rows = all.slice(0, S.limit);
+  $('#fcount').textContent = `${S.files.length} files in register · showing ${rows.length} of ${all.length}`;
+  $('#ftable').innerHTML = rows.length ? `<table><thead><tr>${th('sr', 'Sr. No', 'c1')}${th('fileNo', 'File No', 'c2')}${th('fileName', 'File Name')}${th('cp', 'Company · Project')}${th('department', 'Department')}${th('location', 'Location')}${th('status', 'Status')}<th>Custody</th><th></th></tr></thead><tbody>${rows.map((f) => `
+    <tr><td class="c1"><span class="sr">${S.sr.get(f.id)}</span></td><td class="c2"><span class="fno">${esc(f.fileNo)}</span></td>
+    <td class="wrap"><b style="font-weight:600">${esc(f.fileName)}</b></td><td>${esc([f.company, f.project].filter(Boolean).join(' · '))}</td><td>${esc(f.department)}</td><td>${esc(f.location)}</td>
+    <td>${inOut(f)}</td>
+    <td>${custodyTag(f)}${f.holder ? `<div class="sub" style="margin-top:3px">${esc(f.holder.name)} · ${esc(f.holder.department)}<br>since ${esc(fmt(f.issuedAt || f.requestedAt))}</div>` : ''}${f.overdue ? ' ' + tag('overdue', 'Overdue') : ''}</td>
+    <td><button class="btn sm" data-act="file" data-id="${f.id}" title="QR code and history">QR</button></td></tr>`).join('')}</tbody></table>
+    ${all.length > rows.length ? `<button class="btn more" id="more">Show ${Math.min(100, all.length - rows.length)} more</button>` : ''}` : '<div class="empty"><b>No files match</b>Change the filters, add a file, or import your Excel register.</div>';
+  const m = $('#more'); if (m) m.onclick = () => { S.limit += 100; fileRows(); };
+}
+$('#view').addEventListener('click', (e) => {
+  const h = e.target.closest('th[data-sort]'); if (!h) return;
+  const k = h.dataset.sort; S.sort = {k, dir: S.sort.k === k ? -S.sort.dir : 1}; fileRows();
+});
+$('#importFile').addEventListener('change', async (e) => {
+  const file = e.target.files[0]; e.target.value = ''; if (!file) return;
+  try {
+    const r = await api('/api/admin/import', {method: 'POST', headers: {'x-filename': file.name, 'Content-Type': 'application/octet-stream'}, body: file});
+    openModal(`<h2>Import finished <button class="x" onclick="closeModal()">×</button></h2>
+      <p><b>${r.added}</b> added · <b>${r.updated}</b> updated · <b>${r.skipped}</b> skipped</p>
+      ${r.problems.length ? `<div class="msg" style="white-space:pre-line">${esc(r.problems.join('\n'))}</div>` : ''}
+      <div class="actions"><button class="btn pri" onclick="closeModal()">OK</button></div>`, true);
+    load();
+  } catch (err) { toast(err.message); }
+});
+function fileForm(f) {
+  const v = f || {company: '', project: '', department: '', fileName: '', fileNo: '', scanStatus: 'In-Scan', copies: 1, location: ''};
+  const inp = (k, l, extra = '') => `<div><label>${l}</label><input id="ff_${k}" value="${esc(v[k])}" ${extra}></div>`;
+  openModal(`<h2>${f ? 'Edit file' : 'Add file'} <button class="x" onclick="closeModal()">×</button></h2>
+    <div class="grid2">
+      ${inp('company', 'Company')}${inp('project', 'Project')}${inp('department', 'Department')}${inp('location', 'Location')}
+      <div class="span2"><label>File Name *</label><input id="ff_fileName" value="${esc(v.fileName)}"></div>
+      <div><label>File No <span class="sub">(blank = auto, e.g. HLR/Gurgaon/Admin/3)</span></label><input id="ff_fileNo" value="${esc(v.fileNo)}"></div>
+      <div><label>No of files</label><input id="ff_copies" type="number" min="0" value="${esc(v.copies)}"></div>
+      <div><label>Scan status</label><input id="ff_scanStatus" list="ss" value="${esc(v.scanStatus)}"><datalist id="ss"><option>In-Scan</option><option>Not Scanned</option></datalist></div>
+    </div>
+    <div class="msg" id="mm"></div>
+    <div class="actions"><button class="btn pri" id="ok">Save</button><button class="btn" onclick="closeModal()">Cancel</button></div>`);
+  $('#ok').onclick = async () => {
+    const body = {}; for (const k of ['company','project','department','location','fileName','fileNo','copies','scanStatus']) body[k] = $('#ff_' + k).value;
+    try { await api(f ? `/api/admin/files/${f.id}` : '/api/admin/files', {method: f ? 'PUT' : 'POST', body}); closeModal(); toast('Saved'); await load(); }
+    catch (e) { $('#mm').textContent = e.message; }
+  };
+}
+async function openFile(id) {
+  const f = S.files.find((x) => x.id === id); if (!f) return;
+  const hist = await api('/api/admin/movements?fileNo=' + encodeURIComponent(f.fileNo));
+  openModal(`<h2>${esc(f.fileName)} <button class="x" onclick="closeModal()">×</button></h2>
+    <div class="qrbox">
+      <div><img src="/api/admin/qr/${f.id}?fmt=svg&t=${Date.now()}" alt="QR code"><div class="sub mono" style="text-align:center;margin-top:4px">${esc(f.fileNo)}</div></div>
+      <div style="flex:1;min-width:230px">
+        <dl class="kv"><dt>Sr. No</dt><dd><span class="sr">${S.sr.get(f.id)}</span></dd><dt>File No</dt><dd class="mono">${esc(f.fileNo)}</dd><dt>Company</dt><dd>${esc(f.company)}</dd><dt>Project</dt><dd>${esc(f.project)}</dd>
+        <dt>Department</dt><dd>${esc(f.department)}</dd><dt>Location</dt><dd>${esc(f.location)}</dd><dt>No of files</dt><dd>${f.copies}</dd>
+        <dt>Status</dt><dd>${inOut(f)} ${custodyTag(f)} ${f.holder ? `with <b>${esc(f.holder.name)}</b>` : ''}</dd>
+        <dt>QR opens</dt><dd class="mono" style="font-size:11.5px">${esc(f.link)}</dd></dl>
+      </div>
+    </div>
+    <div class="actions">
+      <a class="btn" href="/api/admin/qr/${f.id}?fmt=png&download=1">${ico('down')}Download QR (PNG)</a>
+      <button class="btn" id="bPrint">${ico('print')}Print label</button>
+      ${f.custody === 'available' ? '<button class="btn go" id="bIssue">Issue to someone</button>' : f.custody === 'issued' ? '<button class="btn go" id="bRet">Mark returned</button>' : ''}
+      <button class="btn" id="bEdit">Edit</button><button class="btn del" id="bDel">Delete</button>
+    </div>
+    <h3>Movement history</h3>
+    ${hist.length ? `<div class="hist">${hist.map((m) => `<div>${tag(m.status)} <b>${esc(m.person.name)}</b> <span class="sub">(${esc(m.person.department)} · Emp ID ${esc(m.person.empId) || '—'} · ${esc(m.person.phone)})</span><br>
+      <span class="sub">${m.ref} · ${m.issuedAt ? `Taken ${fmt(m.issuedAt)}${m.issuedBy ? ' (' + esc(m.issuedBy) + ')' : ''}` : `Requested ${fmt(m.requestedAt)}`}${m.returnedAt ? ` · ${m.status === 'rejected' ? 'Rejected' : 'Returned'} ${fmt(m.returnedAt)}` : ''}${m.remarks ? ' · ' + esc(m.remarks) : ''}<br>Purpose: ${esc(m.person.purpose) || '—'}</span></div>`).join('')}</div>` : '<div class="sub">This file has never been taken.</div>'}`);
+  $('#bPrint').onclick = () => printLabels([f]);
+  $('#bEdit').onclick = () => fileForm(f);
+  $('#bDel').onclick = async () => { if (!confirm(`Delete ${f.fileNo}? Its history stays in the log.`)) return; try { await api('/api/admin/files/' + f.id, {method: 'DELETE'}); closeModal(); toast('Deleted'); load(); } catch (e) { toast(e.message); } };
+  if ($('#bIssue')) $('#bIssue').onclick = () => issueForm(f);
+  if ($('#bRet')) $('#bRet').onclick = () => askText('Mark file returned', 'Remarks (optional)', 'Mark returned', async (v) => { await api(`/api/admin/movements/${f.txnId}/return`, {method: 'POST', body: {remarks: v}}); toast('File is back — now Available'); load(); });
+}
+function issueForm(f) {
+  const i = (k, l, t = 'text') => `<div><label>${l}</label><input id="is_${k}" type="${t}"></div>`;
+  openModal(`<h2>Issue file directly <button class="x" onclick="closeModal()">×</button></h2>
+    <p class="sub">For people who did not scan the QR.</p><p><span class="fno">${esc(f.fileNo)}</span> ${esc(f.fileName)}</p>
+    <div class="grid2">${i('name', 'Name *')}${i('empId', 'Emp ID')}${i('department', 'Department')}${i('phone', 'Mob No')}
+    <div class="span2"><label>Purpose</label><input id="is_purpose"></div>${i('dueDate', 'Return by', 'date')}
+    <div><label>Handed over by</label><input id="is_by" value="${esc(localStorage.getItem('ft-admin') || '')}"></div></div>
+    <div class="msg" id="mm"></div><div class="actions"><button class="btn go" id="ok">Issue</button><button class="btn" onclick="closeModal()">Cancel</button></div>`);
+  $('#ok').onclick = async () => {
+    const body = {fileNo: f.fileNo, issuedBy: $('#is_by').value}; for (const k of ['name','empId','department','phone','purpose','dueDate']) body[k] = $('#is_' + k).value;
+    try { localStorage.setItem('ft-admin', body.issuedBy); await api('/api/admin/issue', {method: 'POST', body}); closeModal(); toast('File issued — now Out'); load(); } catch (e) { $('#mm').textContent = e.message; }
+  };
+}
+
+/* ---------------- log */
+function vLog() {
+  $('#view').innerHTML = pageHead('Movement Log', 'Who took which file, with full details, date and time — newest first.') + `
+  <div class="bar"><div class="search">${ico('search')}<input id="lq" placeholder="Search file, person, emp id, department…" value="${esc(S.logq)}"></div>
+    <select id="ls"><option value="">All status</option>${['issued','returned','requested','rejected'].map((k) => `<option value="${k}" ${S.logs === k ? 'selected' : ''}>${k === 'issued' ? 'Out (not returned)' : LABEL[k]}</option>`).join('')}</select>
+    <span class="count" id="lcount"></span><span class="grow"></span><a class="btn" href="/api/admin/export">${ico('down')}Export Excel</a></div>
+  <div class="panel scroll" id="ltable"></div>`;
+  $('#lq').oninput = (e) => { S.logq = e.target.value; logRows(); };
+  $('#ls').onchange = (e) => { S.logs = e.target.value; logRows(); };
+  logRows();
+}
+function logRows() {
+  const q = S.logq.toLowerCase();
+  const all = S.moves.filter((m) => (!S.logs || m.status === S.logs) && (!q || [m.fileNo, m.fileName, m.person.name, m.person.empId, m.person.department, m.person.phone, m.person.purpose].join(' ').toLowerCase().includes(q)));
+  const rows = all.slice(0, 500);
+  $('#lcount').textContent = `${all.length} record${all.length === 1 ? '' : 's'}`;
+  $('#ltable').innerHTML = rows.length ? `<table><thead><tr><th class="c1">Sr. No</th><th class="c2">File No</th><th>File Name</th><th>Taken by</th><th>Emp ID</th><th>Department</th><th>Mob No</th><th>Purpose</th><th>Date &amp; time taken</th><th>Returned on</th><th>Status</th></tr></thead><tbody>${rows.map((m) => `
+    <tr><td class="c1"><span class="sr">${m.ref}</span></td><td class="c2"><span class="fno">${esc(m.fileNo)}</span></td>
+    <td class="wrap">${esc(m.fileName)}</td>
+    <td><b>${esc(m.person.name)}</b></td><td>${esc(m.person.empId) || '—'}</td><td>${esc(m.person.department)}</td><td>${esc(m.person.phone)}</td>
+    <td class="wrap">${esc(m.person.purpose) || '—'}</td>
+    <td>${fmt(m.issuedAt || m.requestedAt)}${m.issuedBy ? `<div class="sub">${esc(m.issuedBy)}</div>` : ''}</td>
+    <td>${m.status === 'returned' ? fmt(m.returnedAt) : '—'}${m.remarks ? `<div class="sub">${esc(m.remarks)}</div>` : ''}</td>
+    <td>${m.status === 'issued' ? tag('out', 'Out') : tag(m.status)}</td></tr>`).join('')}</tbody></table>` : '<div class="empty"><b>No movements yet</b>They appear here once someone scans a QR and submits the form.</div>';
+}
+
+/* ---------------- labels */
+function vLabels() {
+  const rows = filtered();
+  $('#view').innerHTML = pageHead('QR Labels', 'Print and stick one label on each physical file. Scanning it opens the form for that File No.') + `
+  <div class="bar"><select id="lp">${opts(uniq('project'), S.filt.project, 'All projects')}</select><select id="ld">${opts(uniq('department'), S.filt.department, 'All departments')}</select>
+  <span class="count">${rows.length} label(s)</span><span class="grow"></span><button class="btn pri" id="bPrintAll">${ico('print')}Print these labels</button></div>
+  <div class="labels">${labelHtml(rows)}</div>`;
+  $('#lp').onchange = (e) => { S.filt.project = e.target.value; vLabels(); };
+  $('#ld').onchange = (e) => { S.filt.department = e.target.value; vLabels(); };
+  $('#bPrintAll').onclick = () => printLabels(rows);
+}
+const labelHtml = (rows) => rows.map((f) => `<div class="label"><img src="/api/admin/qr/${f.id}?fmt=svg" alt=""><div><b>${S.sr.get(f.id)}. ${esc(f.fileNo)}</b><span>${esc(f.fileName)}</span><span style="color:#666">${esc(f.project)} · ${esc(f.department)}</span></div></div>`).join('');
+function printLabels(rows) {
+  if (!rows.length) return toast('Nothing to print');
+  $('#printOnly').innerHTML = `<div class="labels">${labelHtml(rows)}</div>`;
+  const imgs = [...document.querySelectorAll('#printOnly img')];
+  Promise.all(imgs.map((i) => i.complete ? 0 : new Promise((r) => { i.onload = i.onerror = r; }))).then(() => window.print());
+}
+
+/* ---------------- users */
+async function vUsers() {
+  const head = (r) => pageHead('Users', 'Create a user id and password for each person who may sign in.', r || '');
+  $('#view').innerHTML = head() + '<div class="empty">Loading…</div>';
+  let list; try { list = await api('/api/admin/users'); } catch (e) { $('#view').innerHTML = head() + `<div class="empty">${esc(e.message)}</div>`; return; }
+  $('#view').innerHTML = head('<button class="btn pri" id="nu" type="button">+ Create user</button>') + `<div class="panel"><table>
+    <tr><th>User ID</th><th>Name</th><th>Role</th><th>Status</th><th>Created</th><th></th></tr>${list.map((u) => `
+    <tr><td><b>${esc(u.username)}</b>${u.id === ME.id ? ' <span class="sub">(you)</span>' : ''}</td><td>${esc(u.name)}</td>
+    <td>${u.role === 'admin' ? 'Admin' : 'Staff'}</td><td>${u.active ? tag('in', 'Active') : tag('out', 'Disabled')}</td><td>${fmt(u.createdAt)}</td>
+    <td style="white-space:nowrap"><button class="btn sm" data-u="pw" data-id="${u.id}">Reset password</button>
+    ${u.id !== ME.id ? ` <button class="btn sm" data-u="tg" data-id="${u.id}" data-a="${u.active ? 1 : 0}">${u.active ? 'Disable' : 'Enable'}</button> <button class="btn del sm" data-u="rm" data-id="${u.id}">Delete</button>` : ''}</td></tr>`).join('')}</table></div>
+    <p class="sub" style="margin-top:12px"><b>Admin</b> can do everything, including creating users. <b>Staff</b> can use the dashboard, files, QR labels and movement log, but cannot manage users.</p>`;
+  const byId = (id) => list.find((u) => u.id == id);
+  $('#nu').onclick = () => {
+    openModal(`<h2>Create user <button class="x" onclick="closeModal()">×</button></h2>
+      <div class="f"><label>Full name</label><input id="un" maxlength="80">
+      <label style="margin-top:10px">User ID (for login)</label><input id="ui" maxlength="30" placeholder="e.g. rahul.sharma" autocapitalize="off">
+      <label style="margin-top:10px">Password (min 6 characters)</label><input id="up" type="text" maxlength="60">
+      <label style="margin-top:10px">Role</label><select id="ur"><option value="staff">Staff</option><option value="admin">Admin</option></select></div>
+      <div class="msg" id="mm"></div><div class="actions"><button class="btn pri" id="ok">Create user</button><button class="btn" onclick="closeModal()">Cancel</button></div>`, true);
+    $('#un').focus();
+    $('#ok').onclick = async () => { try { await api('/api/admin/users', {method: 'POST', body: {name: $('#un').value, username: $('#ui').value, password: $('#up').value, role: $('#ur').value}}); closeModal(); toast('User created'); vUsers(); } catch (e) { $('#mm').textContent = e.message; } };
+  };
+  $('#view').querySelector('table').addEventListener('click', async (e) => {
+    const b = e.target.closest('button[data-u]'); if (!b) return; const u = byId(b.dataset.id); const k = b.dataset.u;
+    try {
+      if (k === 'pw') return askText('Reset password for ' + u.username, 'New password (min 6 characters)', 'Save password', async (v) => { await api('/api/admin/users/' + u.id, {method: 'PUT', body: {password: v}}); toast('Password changed'); });
+      if (k === 'tg') { await api('/api/admin/users/' + u.id, {method: 'PUT', body: {active: b.dataset.a !== '1'}}); toast('Updated'); return vUsers(); }
+      if (k === 'rm' && confirm('Delete user ' + u.username + '?')) { await api('/api/admin/users/' + u.id, {method: 'DELETE'}); toast('User deleted'); vUsers(); }
+    } catch (err) { toast(err.message); }
+  });
+}
+
+/* ---------------- settings */
+async function vSettings() {
+  $('#view').innerHTML = pageHead('Settings', 'How scanning works and where the QR codes point.') + '<div class="empty">Loading…</div>';
+  S.settings = await api('/api/admin/settings');
+  const s = S.settings;
+  $('#view').innerHTML = pageHead('Settings', 'How scanning works and where the QR codes point.') + `<div class="box" style="max-width:760px">
+    <b>When someone scans a QR and submits the form</b>
+    <label class="switch" style="margin-top:10px"><input type="checkbox" id="ra" ${s.requireApproval ? 'checked' : ''}>
+      <span><b>Ask Admin to approve first</b><br><span class="sub">OFF (default): the file becomes <b>Out / Not Available</b> immediately and the person's details and time go in the Movement Log. ON: it waits on the Dashboard until Admin clicks Hand over.</span></span></label>
+    <hr style="border:0;border-top:1px solid var(--line);margin:20px 0">
+    <b>QR link address</b>
+    <p class="sub">Phones must be able to open this address, so it must be this PC's network IP (not "localhost"). Everyone has to be on the same Wi-Fi/LAN as this PC. If you change it, <b>reprint the QR labels</b> — old stickers keep the old address.</p>
+    <div class="f"><label>Detected automatically</label><div class="mono">${esc(s.detectedUrl)}</div>
+    <label style="margin-top:10px">Override (optional)</label><input id="bu" value="${esc(s.baseUrl)}" placeholder="http://192.168.1.20:4100" style="width:100%"></div>
+    <div class="msg" id="mm"></div>
+    <div class="actions"><button class="btn pri" id="sv">Save settings</button></div>
+    <p class="sub" style="margin-top:18px">Currently, QR codes open: <span class="mono">${esc(s.activeUrl)}/scan?no=&lt;File No&gt;</span></p>
+    </div>`;
+  $('#sv').onclick = async () => { try { S.settings = await api('/api/admin/settings', {method: 'PUT', body: {baseUrl: $('#bu').value, requireApproval: $('#ra').checked}}); toast('Saved'); vSettings(); load(true); } catch (e) { $('#mm').textContent = e.message; } };
+}
+
+/* ---------------- boot */
+$('#loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  try { await api('/api/login', {method: 'POST', body: {username: $('#uid').value, password: $('#pin').value}}); $('#pin').value = ''; $('#loginMsg').textContent = ''; start(); }
+  catch (err) { $('#loginMsg').textContent = err.message; }
+});
+$('#logout').onclick = async () => { await api('/api/logout', {method: 'POST'}).catch(() => {}); showLogin(); };
+fetch('/api/version').then((r) => r.json()).then((v) => { $('#ver').textContent = 'Build ' + v.build; }).catch(() => {});
+async function start() { ME = (await api('/api/admin/me').catch(() => null)); if (ME) $('#who').textContent = ME.name + ' · ' + ME.role; $('#login').classList.add('hidden'); $('#app').classList.remove('hidden'); await load(); }
+(async () => {
+  const me = await fetch('/api/me', {credentials: 'same-origin'}).then((r) => r.json()).catch(() => ({}));
+  if (me.admin) start(); else showLogin();
+  setInterval(() => { if (!$('#app').classList.contains('hidden') && document.visibilityState === 'visible' && $('#modal').classList.contains('hidden') && (S.tab === 'dashboard' || S.tab === 'log')) load(true); }, 8000);
+})();
+</script>
+</body>
+</html>
