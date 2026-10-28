@@ -655,7 +655,7 @@ async function vUsers() {
   $('#nu').onclick = () => {
     openModal(`<h2>Create user <button class="x" onclick="closeModal()">×</button></h2>
       <div class="f"><label>Full name</label><input id="un" maxlength="80">
-      <label style="margin-top:10px">User ID (for login)</label><input id="ui" maxlength="30" placeholder="e.g. rahul.sharma" autocapitalize="off">
+      <label style="margin-top:10px">User ID (for login)</label><input id="ui" maxlength="60" placeholder="e.g. rahul.sharma or name@homeland.org" autocapitalize="off">
       <label style="margin-top:10px">Password (min 6 characters)</label><input id="up" type="text" maxlength="60">
       <label style="margin-top:10px">Role</label><select id="ur"><option value="staff">Staff</option><option value="admin">Admin</option></select></div>
       <div class="msg" id="mm"></div><div class="actions"><button class="btn pri" id="ok">Create user</button><button class="btn" onclick="closeModal()">Cancel</button></div>`, true);

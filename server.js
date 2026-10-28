@@ -13,7 +13,7 @@ const os = require('os');
 const crypto = require('crypto');
 const { Readable } = require('stream');
 
-const BUILD = '2026-10-28 · v9 (vercel + neon)';
+const BUILD = '2026-10-28 · v9.1 (vercel + neon)';
 const PORT = Number(process.env.PORT) || 3000;
 const ADMIN_PIN = String(process.env.ADMIN_PIN || 'admin123');
 const DATA_DIR = path.join(__dirname, 'data');
@@ -574,8 +574,8 @@ admin.get('/me', (req, res) => res.json(pubUser(req.user)));
 admin.get('/users', adminOnly, (req, res) => res.json(db.users.map(pubUser)));
 admin.post('/users', adminOnly, (req, res) => {
   const b = req.body || {};
-  const username = clean(b.username, 30).toLowerCase(), name = clean(b.name, 80), pw = String(b.password || '');
-  if (!/^[a-z0-9._-]{3,30}$/.test(username)) return res.status(400).json({ error: 'User id: 3-30 letters, numbers, . _ -' });
+  const username = clean(b.username, 60).toLowerCase(), name = clean(b.name, 80), pw = String(b.password || '');
+  if (!/^[a-z0-9._@+-]{3,60}$/.test(username)) return res.status(400).json({ error: 'User id: 3-60 letters, numbers, . _ - @ (no spaces)' });
   if (!name) return res.status(400).json({ error: 'Enter the full name' });
   if (pw.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
   if (db.users.some((u) => u.username === username)) return res.status(409).json({ error: 'This user id already exists' });
