@@ -13,7 +13,7 @@ const os = require('os');
 const crypto = require('crypto');
 const { Readable } = require('stream');
 
-const BUILD = '2026-10-28 · v9.1 (vercel + neon)';
+const BUILD = '2026-10-28 · v10 (handover first)';
 const PORT = Number(process.env.PORT) || 3000;
 const ADMIN_PIN = String(process.env.ADMIN_PIN || 'admin123');
 const DATA_DIR = path.join(__dirname, 'data');
@@ -51,7 +51,7 @@ function seed() {
   });
   return {
     seq: { file: 3, txn: 0 },
-    settings: { baseUrl: '', requireApproval: false },
+    settings: { baseUrl: '', requireApproval: true, approvalDefault: 10 },
     files: [
       mk(1, 'Accounts', 'Gst Registration Gurugram', 'HLR/Gurgaon/Accounts/1', 1),
       mk(2, 'Admin', 'Bani Hospitality Services Pvt.Ltd', 'HLR/Gurgaon/Admin/1', 1),
@@ -111,6 +111,8 @@ function makeUser(username, name, password, role) {
 function ensureDefaults() {
   db.seq = db.seq || {};
   db.seq.user = db.seq.user || 0;
+  db.settings = db.settings || { baseUrl: '' };
+  if (db.settings.approvalDefault !== 10) { db.settings.approvalDefault = 10; db.settings.requireApproval = true; saveDb(); } // handover-first is the default
   if (!Array.isArray(db.users) || !db.users.length) {
     // first start: create the master admin from ADMIN_PIN (user id: admin)
     db.users = [makeUser('admin', 'Administrator', ADMIN_PIN, 'admin')];
@@ -380,7 +382,7 @@ admin.post('/movements/:id/issue', (req, res) => {
   const t = txn(req.params.id, 'requested');
   const due = clean(req.body.dueDate, 10);
   if (due && !/^\d{4}-\d{2}-\d{2}$/.test(due)) throw httpError(400, 'Invalid due date');
-  Object.assign(t, { status: 'issued', issuedAt: nowIso(), issuedBy: clean(req.body.issuedBy, 60), dueDate: due });
+  Object.assign(t, { status: 'issued', issuedAt: nowIso(), issuedBy: clean(req.body.issuedBy, 60) || req.user.name, dueDate: due });
   saveDb();
   res.json(t);
 });
@@ -407,7 +409,7 @@ admin.post('/issue', (req, res) => {
   const t = {
     id: ++db.seq.txn, fileNo: f.fileNo, status: 'issued', person, requestedAt: nowIso(),
     dueDate: /^\d{4}-\d{2}-\d{2}$/.test(due) ? due : '', issuedAt: nowIso(),
-    issuedBy: clean(req.body.issuedBy, 60), returnedAt: null, remarks: '',
+    issuedBy: clean(req.body.issuedBy, 60) || req.user.name, returnedAt: null, remarks: '',
   };
   db.movements.push(t);
   saveDb();
@@ -529,7 +531,7 @@ admin.get('/export', wrap(async (req, res) => {
     ws.addRow({
       sr: i + 1, company: f.company, project: f.project, department: f.department, fileName: f.fileName,
       fileNo: f.fileNo, scanStatus: f.scanStatus, copies: f.copies, location: f.location,
-      inout: v.custody === 'available' ? 'In' : 'Out', custody: v.custody === 'available' ? 'Available' : 'Not Available',
+      inout: v.custody === 'issued' ? 'Out' : 'In', custody: v.custody === 'available' ? 'Available' : v.custody === 'requested' ? 'Request pending' : 'Not Available',
       holder: v.holder ? `${v.holder.name} (${v.holder.department})` : '',
       since: v.issuedAt || v.requestedAt ? new Date(v.issuedAt || v.requestedAt).toLocaleString('en-IN') : '',
       due: v.dueDate, link: scanLink(f.fileNo),

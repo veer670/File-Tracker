@@ -248,6 +248,7 @@ const IC = {
   print:'<path d="M7 9V3h10v6M7 17H4v-6h16v6h-3M7 14h10v7H7z"/>',
   sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/>',
   moon:'<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/>',
+  users:'<path d="M16 20v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 18.5V20M10 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM20 20v-1.5a3.5 3.5 0 0 0-2.5-3.3M15.5 4.7a3.5 3.5 0 0 1 0 6.6"/>',
   refresh:'<path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/>',
   logout:'<path d="M9 4H5v16h4M16 8l4 4-4 4M20 12H9"/>'
 };
@@ -264,8 +265,8 @@ const localDay = (d) => { const p = (n) => String(n).padStart(2, '0'); return `$
 const today = () => localDay(new Date());
 const LABEL = {available:'Available', requested:'Requested', issued:'Out', returned:'Returned', rejected:'Rejected'};
 const tag = (k, label) => `<span class="tag g-${k}">${esc(label || LABEL[k] || k)}</span>`;
-const inOut = (f) => f.custody === 'available' ? tag('in', 'In') : tag('out', 'Out');
-const custodyTag = (f) => f.custody === 'available' ? tag('available', 'Available') : tag('na', 'Not Available');
+const inOut = (f) => f.custody === 'issued' ? tag('out', 'Out') : tag('in', 'In');
+const custodyTag = (f) => f.custody === 'available' ? tag('available', 'Available') : f.custody === 'requested' ? tag('requested', 'Request pending') : tag('na', 'Not Available');
 
 const S = { tab: 'dashboard', files: [], moves: [], sum: {}, sr: new Map(), at: new Date(), filt: {q:'', project:'', department:'', custody:''}, sort: {k:'sr', dir:1}, limit: 100, logq: '', logs: '', settings: {} };
 const TABS = [['dashboard','Dashboard'],['files','Files'],['log','Movement Log'],['labels','QR Labels'],['users','Users'],['settings','Settings']];
@@ -333,7 +334,7 @@ const EV = {issued: ['out', 'took'], returned: ['back', 'returned'], requested: 
 S.repView = {department: 'chart', location: 'chart'};
 function groupReport(key) {
   const g = {};
-  for (const f of S.files) { const k = f[key] || '—'; const r = (g[k] = g[k] || {n: 0, i: 0, o: 0}); r.n++; if (f.custody === 'available') r.i++; else r.o++; }
+  for (const f of S.files) { const k = f[key] || '—'; const r = (g[k] = g[k] || {n: 0, i: 0, o: 0}); r.n++; if (f.custody !== 'issued') r.i++; else r.o++; }
   const rows = Object.entries(g).sort((a, b) => b[1].o - a[1].o || b[1].n - a[1].n || a[0].localeCompare(b[0]));
   const t = rows.reduce((x, [, r]) => ({n: x.n + r.n, i: x.i + r.i, o: x.o + r.o}), {n: 0, i: 0, o: 0});
   return {rows, t};
@@ -387,7 +388,7 @@ function movementCard() {
 }
 function vDashboard() {
   const s = S.sum;
-  const total = s.total ?? 0, avail = s.available ?? 0, outN = total - avail;
+  const total = s.total ?? 0, outN = s.issued ?? 0, avail = total - outN;
   const pct = (n) => (total ? Math.round((n / total) * 100) : 0);
   const pend = S.moves.filter((m) => m.status === 'requested').reverse();
   const out = S.files.filter((f) => f.custody === 'issued').sort((a, b) => new Date(a.issuedAt) - new Date(b.issuedAt));
@@ -405,14 +406,14 @@ function vDashboard() {
     ${kpi('k-bad', 'alert', 'Overdue', s.overdue ?? 0, s.overdue ? '<em>Needs follow-up</em>' : 'Everything on time')}
     ${kpi('k-new', 'clock', 'Taken today', tookToday, `Returned today: <em>${retToday}</em>`)}
   </div>
-  ${pend.length || S.settings.requireApproval ? `<section class="card" style="margin-top:16px"><header class="ch"><div><h3>Awaiting your approval</h3><p>Admin approval is switched on in Settings</p></div></header>
+  <div class="dgrid d2b">${reportCard('Department-wise report', 'department', 'Department')}${reportCard('Location-wise report', 'location', 'Location')}</div>
+  ${pend.length || S.settings.requireApproval ? `<section class="card" style="margin-top:16px"><header class="ch"><div><h3>Awaiting your approval</h3><p>Hand over after the person scans and submits the form — then the file becomes Out</p></div></header>
   <div class="panel" style="box-shadow:none">${pend.length ? `<table><tr><th>Sr. No</th><th>File</th><th>Requested by</th><th>Purpose</th><th>Requested</th><th></th></tr>${pend.map((m) => `
     <tr><td><span class="sr">${m.ref}</span></td>
     <td><span class="fno">${esc(m.fileNo)}</span><div class="sub" style="margin-top:3px">${esc(m.fileName)}</div></td>
     <td><b>${esc(m.person.name)}</b><div class="sub">${esc(m.person.department)} · ID ${esc(m.person.empId)} · ${esc(m.person.phone)}</div></td>
     <td>${esc(m.person.purpose) || '—'}</td><td>${fmt(m.requestedAt)}</td>
     <td><button class="btn go sm" data-act="handover" data-id="${m.id}">Hand over</button> <button class="btn del sm" data-act="reject" data-id="${m.id}">Reject</button></td></tr>`).join('')}</table>` : '<div class="empty"><b>Nothing waiting</b></div>'}</div></section>` : ''}
-  <div class="dgrid d2b">${reportCard('Department-wise report', 'department', 'Department')}${reportCard('Location-wise report', 'location', 'Location')}</div>
   <section class="card" style="margin-top:16px;padding-bottom:6px"><header class="ch"><div><h3>Files currently out</h3><p>${out.length} file${out.length === 1 ? '' : 's'} with people right now</p></div></header>
   <div class="panel" style="box-shadow:none;border:0">${out.length ? `<table><tr><th>Sr. No</th><th>File</th><th>Taken by</th><th>Mob No</th><th>Taken on</th><th>Days out</th><th>Return by</th><th></th></tr>${out.map((f) => { const d = daysOut(f.issuedAt); const ini = (f.holder.name || '?').split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase(); return `
     <tr><td><span class="sr">${S.sr.get(f.id)}</span></td><td><span class="fno">${esc(f.fileNo)}</span><div class="sub" style="margin-top:3px">${esc(f.fileName)}</div></td>
@@ -446,7 +447,7 @@ function handoverForm(id) {
   const m = S.moves.find((x) => x.id == id);
   openModal(`<h2>Hand over file <button class="x" onclick="closeModal()">×</button></h2>
     <p><span class="fno">${esc(m.fileNo)}</span> ${esc(m.fileName)}<br>to <b>${esc(m.person.name)}</b> (${esc(m.person.department)}, ${esc(m.person.phone)})</p>
-    <div class="f"><label>Handed over by (Admin name)</label><input id="hb" value="${esc(localStorage.getItem('ft-admin') || '')}">
+    <div class="f"><label>Handed over by (Admin name)</label><input id="hb" value="${esc((ME && ME.name) || localStorage.getItem('ft-admin') || '')}">
     <label style="margin-top:10px">Return by</label><input id="hd" type="date" min="${today()}" value="${esc(m.dueDate)}"></div>
     <div class="msg" id="mm"></div>
     <div class="actions"><button class="btn go" id="ok">Confirm handover</button><button class="btn" onclick="closeModal()">Cancel</button></div>`, true);
@@ -478,7 +479,7 @@ function filtered() {
 const opts = (list, cur, all) => `<option value="">${all}</option>` + list.map((v) => `<option ${v === cur ? 'selected' : ''}>${esc(v)}</option>`).join('');
 const SORTS = {
   sr: (f) => S.sr.get(f.id), fileNo: (f) => f.fileNo, fileName: (f) => f.fileName, cp: (f) => f.company + ' ' + f.project,
-  department: (f) => f.department, location: (f) => f.location, status: (f) => (f.custody === 'available' ? 0 : 1),
+  department: (f) => f.department, location: (f) => f.location, status: (f) => (f.custody === 'issued' ? 1 : 0),
 };
 const nat = new Intl.Collator('en', {numeric: true, sensitivity: 'base'});
 function sorted(rows) {
@@ -680,7 +681,7 @@ async function vSettings() {
   $('#view').innerHTML = pageHead('Settings', 'How scanning works and where the QR codes point.') + `<div class="box" style="max-width:760px">
     <b>When someone scans a QR and submits the form</b>
     <label class="switch" style="margin-top:10px"><input type="checkbox" id="ra" ${s.requireApproval ? 'checked' : ''}>
-      <span><b>Ask Admin to approve first</b><br><span class="sub">OFF (default): the file becomes <b>Out / Not Available</b> immediately and the person's details and time go in the Movement Log. ON: it waits on the Dashboard until Admin clicks Hand over.</span></span></label>
+      <span><b>Ask Admin to approve first</b><br><span class="sub">ON (default): the person's details are saved as a request, and the file becomes <b>Out / Not Available</b> only after Admin (or any signed-in user) clicks <b>Hand over</b> on the Dashboard. OFF: the file becomes Out immediately when the form is submitted.</span></span></label>
     <hr style="border:0;border-top:1px solid var(--line);margin:20px 0">
     <b>QR link address</b>
     <p class="sub">Phones must be able to open this address, so it must be this PC's network IP (not "localhost"). Everyone has to be on the same Wi-Fi/LAN as this PC. If you change it, <b>reprint the QR labels</b> — old stickers keep the old address.</p>

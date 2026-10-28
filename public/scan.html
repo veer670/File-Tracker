@@ -78,7 +78,7 @@ function render() {
   root.innerHTML = head() + `<span class="pill p-available">Available</span></div>
     <form class="card" id="form" autocomplete="on">
       <b class="form-t">Your details</b>
-      <div class="sub">Fill these in and submit. The file will be recorded as taken by you.</div>
+      <div class="sub">Fill these in and submit. Admin will then hand the file over to you.</div>
       <label>Name <i>*</i></label><input name="name" required maxlength="80" value="${esc(saved.name)}" autocomplete="name">
       <div class="row2">
         <div><label>Emp ID <i>*</i></label><input name="empId" required maxlength="40" value="${esc(saved.empId)}"></div>
@@ -88,7 +88,7 @@ function render() {
       <label>Purpose <span style="font-weight:400;color:var(--mute)">(optional)</span></label><textarea name="purpose" maxlength="300" placeholder="Why do you need this file?"></textarea>
       <label>Expected return date <span style="font-weight:400;color:var(--mute)">(optional)</span></label><input name="dueDate" type="date" min="${new Date().toISOString().slice(0,10)}">
       <div id="err"></div>
-      <button id="go">Submit &amp; take file</button>
+      <button id="go">Submit details</button>
     </form>`;
   $('#form').addEventListener('submit', submit);
 }
@@ -108,10 +108,10 @@ async function submit(e) {
       <div class="meta">${esc(j.fileNo)}<br>${esc(j.fileName)}</div>
       <div class="step">${out
         ? `<b>This file is now out in your name.</b><br>Taken on ${esc(fmt(j.at))} by ${esc(data.name)} (${esc(data.department)}). Please return it to Admin when done.`
-        : '<b>Next:</b> go to Admin, show this screen and collect your file. It is yours only after Admin hands it over.'}</div></div>`;
+        : '<b>Next:</b> go to Admin, show this screen and collect your file. The file is marked <b>Out</b> in your name only after Admin hands it over.'}</div></div>`;
   } catch (err) {
     $('#err').innerHTML = `<div class="err">${esc(err.message)}</div>`;
-    btn.disabled = false; btn.textContent = 'Submit & take file';
+    btn.disabled = false; btn.textContent = 'Submit details';
   }
 }
 (async () => {
