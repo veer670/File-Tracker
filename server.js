@@ -13,7 +13,7 @@ const os = require('os');
 const crypto = require('crypto');
 const { Readable } = require('stream');
 
-const BUILD = '2026-10-28 · v10 (handover first)';
+const BUILD = '2026-10-28 · v11 (e-mail)';
 const PORT = Number(process.env.PORT) || 3000;
 const ADMIN_PIN = String(process.env.ADMIN_PIN || 'admin123');
 const DATA_DIR = path.join(__dirname, 'data');
@@ -155,8 +155,55 @@ function cleanPerson(p = {}) {
     empId: clean(p.empId, 40),
     department: clean(p.department, 80),
     phone: clean(p.phone, 20),
+    email: clean(p.email, 100).toLowerCase(),
     purpose: clean(p.purpose, 300),
   };
+}
+/* ---- e-mail notifications (SMTP). Set SMTP_HOST, SMTP_USER, SMTP_PASS (+ optional SMTP_PORT, MAIL_FROM) */
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const mailConfigured = () => !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+let transporter = null;
+function getMailer() {
+  if (!transporter) {
+    const port = Number(process.env.SMTP_PORT) || 587;
+    transporter = require('nodemailer').createTransport({
+      host: process.env.SMTP_HOST, port, secure: port === 465,
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+      connectionTimeout: 8000, greetingTimeout: 8000, socketTimeout: 10000,
+    });
+  }
+  return transporter;
+}
+const mailFrom = () => process.env.MAIL_FROM || `"Homeland File Tracker" <${process.env.SMTP_USER}>`;
+const stamp = (iso) => new Date(iso).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+const hx = (x) => String(x == null ? '' : x).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+async function sendMail(to, subject, html) {
+  await getMailer().sendMail({ from: mailFrom(), to, subject, html });
+}
+/** kind: 'issued' | 'returned'. Never throws; stores the result on the movement. */
+async function notify(kind, t) {
+  const key = kind === 'issued' ? 'mailIssued' : 'mailReturned';
+  const to = t.person && t.person.email;
+  if (!to || !EMAIL_RE.test(to)) { t[key] = 'no e-mail'; return; }
+  if (!mailConfigured()) { t[key] = 'not configured'; return; }
+  const f = db.files.find((x) => x.fileNo === t.fileNo) || {};
+  const rows = [['File No', t.fileNo], ['File name', f.fileName || ''], ['Request no', refOf(t.id)]];
+  let subject, intro;
+  if (kind === 'issued') {
+    subject = `File handed over to you: ${t.fileNo}`;
+    intro = `Hello ${hx(t.person.name)}, the file below has been <b>handed over to you</b> and is now recorded as <b>Out</b> in your name.`;
+    rows.push(['Handed over on', stamp(t.issuedAt)], ['Handed over by', t.issuedBy || '-']);
+    if (t.dueDate) rows.push(['Please return by', t.dueDate]);
+  } else {
+    subject = `File return recorded: ${t.fileNo}`;
+    intro = `Hello ${hx(t.person.name)}, thank you. The file below has been <b>returned</b> and is now <b>In</b> (Available).`;
+    rows.push(['Taken on', stamp(t.issuedAt)], ['Returned on', stamp(t.returnedAt)]);
+  }
+  const html = `<div style="font-family:Segoe UI,Arial,sans-serif;max-width:520px;color:#1c1f26"><h2 style="margin:0 0 10px">Homeland File Tracker</h2><p>${intro}</p>
+    <table style="border-collapse:collapse;width:100%">${rows.map(([a, b]) => `<tr><td style="padding:6px 10px;background:#f4f1e8;font-weight:600;width:38%">${hx(a)}</td><td style="padding:6px 10px;border-bottom:1px solid #eee">${hx(b)}</td></tr>`).join('')}</table>
+    <p style="color:#6b7280;font-size:12px;margin-top:16px">This is an automatic message from the Homeland file register.</p></div>`;
+  try { await sendMail(to, subject, html); t[key] = 'sent ' + nowIso(); }
+  catch (e) { console.error('mail failed:', e.message); t[key] = 'failed: ' + clean(e.message, 80); }
 }
 function nextFileNo(company, project, department) {
   const prefix = [company, project, department].map((s) => clean(s, 60)).join('/');
@@ -296,7 +343,7 @@ app.get('/api/public/file', (req, res) => {
     dueDate: v.dueDate,
   });
 });
-app.post('/api/public/request', (req, res) => {
+app.post('/api/public/request', wrap(async (req, res) => {
   const f = findFileByNo(req.body && req.body.fileNo);
   if (!f) throw httpError(404, 'File not found');
   if (openMap().has(f.fileNo)) throw httpError(409, 'This file is not available. It is already with someone else.');
@@ -305,6 +352,7 @@ app.post('/api/public/request', (req, res) => {
   if (!person.empId) throw httpError(400, 'Please enter your Employee ID');
   if (!person.department) throw httpError(400, 'Please enter your department');
   if (!/^[0-9+\-\s]{8,20}$/.test(person.phone)) throw httpError(400, 'Please enter a valid mobile number');
+  if (!EMAIL_RE.test(person.email)) throw httpError(400, 'Please enter a valid e-mail id');
   const due = clean(req.body.dueDate, 10);
   if (due && !/^\d{4}-\d{2}-\d{2}$/.test(due)) throw httpError(400, 'Invalid return date');
   const instant = !needsApproval();
@@ -315,9 +363,10 @@ app.post('/api/public/request', (req, res) => {
     returnedAt: null, remarks: '',
   };
   db.movements.push(t);
+  if (instant) await notify('issued', t);
   saveDb();
   res.json({ ok: true, ref: refOf(t.id), status: t.status, at: ts, fileNo: f.fileNo, fileName: f.fileName });
-});
+}));
 const refOf = (id) => 'R-' + String(id).padStart(4, '0');
 
 /* ---- admin */
@@ -378,33 +427,36 @@ function txn(id, expect) {
   if (t.status !== expect) throw httpError(409, `Request is already "${t.status}"`);
   return t;
 }
-admin.post('/movements/:id/issue', (req, res) => {
+admin.post('/movements/:id/issue', wrap(async (req, res) => {
   const t = txn(req.params.id, 'requested');
   const due = clean(req.body.dueDate, 10);
   if (due && !/^\d{4}-\d{2}-\d{2}$/.test(due)) throw httpError(400, 'Invalid due date');
   Object.assign(t, { status: 'issued', issuedAt: nowIso(), issuedBy: clean(req.body.issuedBy, 60) || req.user.name, dueDate: due });
+  await notify('issued', t);
   saveDb();
   res.json(t);
-});
+}));
 admin.post('/movements/:id/reject', (req, res) => {
   const t = txn(req.params.id, 'requested');
   Object.assign(t, { status: 'rejected', returnedAt: nowIso(), remarks: clean(req.body.reason, 200) });
   saveDb();
   res.json(t);
 });
-admin.post('/movements/:id/return', (req, res) => {
+admin.post('/movements/:id/return', wrap(async (req, res) => {
   const t = txn(req.params.id, 'issued');
   Object.assign(t, { status: 'returned', returnedAt: nowIso(), remarks: clean(req.body.remarks, 200) });
+  await notify('returned', t);
   saveDb();
   res.json(t);
-});
+}));
 // Admin hands a file straight to someone (walk-in, no QR scan)
-admin.post('/issue', (req, res) => {
+admin.post('/issue', wrap(async (req, res) => {
   const f = findFileByNo(req.body.fileNo);
   if (!f) throw httpError(404, 'File not found');
   if (openMap().has(f.fileNo)) throw httpError(409, 'File is already requested/issued');
   const person = cleanPerson(req.body);
   if (!person.name) throw httpError(400, 'Name is required');
+  if (person.email && !EMAIL_RE.test(person.email)) throw httpError(400, 'E-mail id is not valid');
   const due = clean(req.body.dueDate, 10);
   const t = {
     id: ++db.seq.txn, fileNo: f.fileNo, status: 'issued', person, requestedAt: nowIso(),
@@ -412,11 +464,12 @@ admin.post('/issue', (req, res) => {
     issuedBy: clean(req.body.issuedBy, 60) || req.user.name, returnedAt: null, remarks: '',
   };
   db.movements.push(t);
+  await notify('issued', t);
   saveDb();
   res.json(t);
-});
+}));
 
-admin.get('/settings', (req, res) => res.json({ baseUrl: db.settings.baseUrl, detectedUrl: detectedUrl(), activeUrl: baseUrl(), requireApproval: needsApproval() }));
+admin.get('/settings', (req, res) => res.json({ mailConfigured: mailConfigured(), baseUrl: db.settings.baseUrl, detectedUrl: detectedUrl(), activeUrl: baseUrl(), requireApproval: needsApproval() }));
 admin.put('/settings', (req, res) => {
   const u = clean(req.body.baseUrl, 200).replace(/\/+$/, '');
   if (u && !/^https?:\/\/[^\s/]+(:\d+)?(\/[^\s]*)?$/i.test(u)) throw httpError(400, 'Enter a URL like http://192.168.1.20:3000');
@@ -540,7 +593,7 @@ admin.get('/export', wrap(async (req, res) => {
   const log = wb.addWorksheet('Movement Log');
   log.columns = [
     { header: 'Ref', key: 'ref', width: 9 }, { header: 'File No', key: 'fileNo', width: 26 },
-    { header: 'Person', key: 'name', width: 22 }, { header: 'Emp ID', key: 'empId', width: 12 },
+    { header: 'Person', key: 'name', width: 22 }, { header: 'Emp ID', key: 'empId', width: 12 }, { header: 'Mail ID', key: 'email', width: 28 },
     { header: 'Department', key: 'dept', width: 16 }, { header: 'Phone', key: 'phone', width: 14 },
     { header: 'Purpose', key: 'purpose', width: 32 }, { header: 'Requested', key: 'req', width: 20 },
     { header: 'Issued', key: 'iss', width: 20 }, { header: 'Issued By', key: 'by', width: 14 },
@@ -550,7 +603,7 @@ admin.get('/export', wrap(async (req, res) => {
   const d = (x) => (x ? new Date(x).toLocaleString('en-IN') : '');
   for (const m of db.movements) {
     log.addRow({
-      ref: refOf(m.id), fileNo: m.fileNo, name: m.person.name, empId: m.person.empId, dept: m.person.department,
+      ref: refOf(m.id), fileNo: m.fileNo, name: m.person.name, empId: m.person.empId, email: m.person.email, dept: m.person.department,
       phone: m.person.phone, purpose: m.person.purpose, req: d(m.requestedAt), iss: d(m.issuedAt), by: m.issuedBy,
       due: m.dueDate, ret: d(m.returnedAt), status: m.status, rem: m.remarks,
     });
@@ -572,6 +625,14 @@ admin.get('/export', wrap(async (req, res) => {
   res.end();
 }));
 
+admin.post('/mail/test', adminOnly, wrap(async (req, res) => {
+  const to = clean(req.body && req.body.to, 100);
+  if (!EMAIL_RE.test(to)) throw httpError(400, 'Enter a valid e-mail id');
+  if (!mailConfigured()) throw httpError(400, 'E-mail is not set up yet (SMTP_HOST, SMTP_USER, SMTP_PASS are missing)');
+  try { await sendMail(to, 'Homeland File Tracker - test e-mail', '<p>E-mail notifications are working.</p>'); }
+  catch (e) { throw httpError(502, 'Sending failed: ' + e.message); }
+  res.json({ ok: true });
+}));
 admin.get('/me', (req, res) => res.json(pubUser(req.user)));
 admin.get('/users', adminOnly, (req, res) => res.json(db.users.map(pubUser)));
 admin.post('/users', adminOnly, (req, res) => {

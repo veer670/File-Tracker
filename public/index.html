@@ -411,7 +411,7 @@ function vDashboard() {
   <div class="panel" style="box-shadow:none">${pend.length ? `<table><tr><th>Sr. No</th><th>File</th><th>Requested by</th><th>Purpose</th><th>Requested</th><th></th></tr>${pend.map((m) => `
     <tr><td><span class="sr">${m.ref}</span></td>
     <td><span class="fno">${esc(m.fileNo)}</span><div class="sub" style="margin-top:3px">${esc(m.fileName)}</div></td>
-    <td><b>${esc(m.person.name)}</b><div class="sub">${esc(m.person.department)} · ID ${esc(m.person.empId)} · ${esc(m.person.phone)}</div></td>
+    <td><b>${esc(m.person.name)}</b><div class="sub">${esc(m.person.department)} · ID ${esc(m.person.empId)} · ${esc(m.person.phone)}${m.person.email ? '<br>' + esc(m.person.email) : ''}</div></td>
     <td>${esc(m.person.purpose) || '—'}</td><td>${fmt(m.requestedAt)}</td>
     <td><button class="btn go sm" data-act="handover" data-id="${m.id}">Hand over</button> <button class="btn del sm" data-act="reject" data-id="${m.id}">Reject</button></td></tr>`).join('')}</table>` : '<div class="empty"><b>Nothing waiting</b></div>'}</div></section>` : ''}
   <section class="card" style="margin-top:16px;padding-bottom:6px"><header class="ch"><div><h3>Files currently out</h3><p>${out.length} file${out.length === 1 ? '' : 's'} with people right now</p></div></header>
@@ -585,12 +585,12 @@ function issueForm(f) {
   const i = (k, l, t = 'text') => `<div><label>${l}</label><input id="is_${k}" type="${t}"></div>`;
   openModal(`<h2>Issue file directly <button class="x" onclick="closeModal()">×</button></h2>
     <p class="sub">For people who did not scan the QR.</p><p><span class="fno">${esc(f.fileNo)}</span> ${esc(f.fileName)}</p>
-    <div class="grid2">${i('name', 'Name *')}${i('empId', 'Emp ID')}${i('department', 'Department')}${i('phone', 'Mob No')}
+    <div class="grid2">${i('name', 'Name *')}${i('empId', 'Emp ID')}${i('department', 'Department')}${i('phone', 'Mob No')}${i('email', 'Mail ID', 'email')}
     <div class="span2"><label>Purpose</label><input id="is_purpose"></div>${i('dueDate', 'Return by', 'date')}
     <div><label>Handed over by</label><input id="is_by" value="${esc(localStorage.getItem('ft-admin') || '')}"></div></div>
     <div class="msg" id="mm"></div><div class="actions"><button class="btn go" id="ok">Issue</button><button class="btn" onclick="closeModal()">Cancel</button></div>`);
   $('#ok').onclick = async () => {
-    const body = {fileNo: f.fileNo, issuedBy: $('#is_by').value}; for (const k of ['name','empId','department','phone','purpose','dueDate']) body[k] = $('#is_' + k).value;
+    const body = {fileNo: f.fileNo, issuedBy: $('#is_by').value}; for (const k of ['name','empId','department','phone','email','purpose','dueDate']) body[k] = $('#is_' + k).value;
     try { localStorage.setItem('ft-admin', body.issuedBy); await api('/api/admin/issue', {method: 'POST', body}); closeModal(); toast('File issued — now Out'); load(); } catch (e) { $('#mm').textContent = e.message; }
   };
 }
@@ -608,13 +608,13 @@ function vLog() {
 }
 function logRows() {
   const q = S.logq.toLowerCase();
-  const all = S.moves.filter((m) => (!S.logs || m.status === S.logs) && (!q || [m.fileNo, m.fileName, m.person.name, m.person.empId, m.person.department, m.person.phone, m.person.purpose].join(' ').toLowerCase().includes(q)));
+  const all = S.moves.filter((m) => (!S.logs || m.status === S.logs) && (!q || [m.fileNo, m.fileName, m.person.name, m.person.empId, m.person.email, m.person.department, m.person.phone, m.person.purpose].join(' ').toLowerCase().includes(q)));
   const rows = all.slice(0, 500);
   $('#lcount').textContent = `${all.length} record${all.length === 1 ? '' : 's'}`;
-  $('#ltable').innerHTML = rows.length ? `<table><thead><tr><th class="c1">Sr. No</th><th class="c2">File No</th><th>File Name</th><th>Taken by</th><th>Emp ID</th><th>Department</th><th>Mob No</th><th>Purpose</th><th>Date &amp; time taken</th><th>Returned on</th><th>Status</th></tr></thead><tbody>${rows.map((m) => `
+  $('#ltable').innerHTML = rows.length ? `<table><thead><tr><th class="c1">Sr. No</th><th class="c2">File No</th><th>File Name</th><th>Taken by</th><th>Emp ID</th><th>Mail ID</th><th>Department</th><th>Mob No</th><th>Purpose</th><th>Date &amp; time taken</th><th>Returned on</th><th>Status</th></tr></thead><tbody>${rows.map((m) => `
     <tr><td class="c1"><span class="sr">${m.ref}</span></td><td class="c2"><span class="fno">${esc(m.fileNo)}</span></td>
     <td class="wrap">${esc(m.fileName)}</td>
-    <td><b>${esc(m.person.name)}</b></td><td>${esc(m.person.empId) || '—'}</td><td>${esc(m.person.department)}</td><td>${esc(m.person.phone)}</td>
+    <td><b>${esc(m.person.name)}</b></td><td>${esc(m.person.empId) || '—'}</td><td>${esc(m.person.email) || '—'}</td><td>${esc(m.person.department)}</td><td>${esc(m.person.phone)}</td>
     <td class="wrap">${esc(m.person.purpose) || '—'}</td>
     <td>${fmt(m.issuedAt || m.requestedAt)}${m.issuedBy ? `<div class="sub">${esc(m.issuedBy)}</div>` : ''}</td>
     <td>${m.status === 'returned' ? fmt(m.returnedAt) : '—'}${m.remarks ? `<div class="sub">${esc(m.remarks)}</div>` : ''}</td>
@@ -683,6 +683,10 @@ async function vSettings() {
     <label class="switch" style="margin-top:10px"><input type="checkbox" id="ra" ${s.requireApproval ? 'checked' : ''}>
       <span><b>Ask Admin to approve first</b><br><span class="sub">ON (default): the person's details are saved as a request, and the file becomes <b>Out / Not Available</b> only after Admin (or any signed-in user) clicks <b>Hand over</b> on the Dashboard. OFF: the file becomes Out immediately when the form is submitted.</span></span></label>
     <hr style="border:0;border-top:1px solid var(--line);margin:20px 0">
+    <b>E-mail notifications</b>
+    <p class="sub">The person gets an e-mail when the file is <b>handed over</b> and again when it is <b>returned</b>. Status: ${s.mailConfigured ? '<b style="color:var(--ok)">E-mail is set up</b>' : '<b style="color:var(--bad)">Not set up yet</b> — add SMTP_HOST, SMTP_USER and SMTP_PASS (see the setup steps), then redeploy.'}</p>
+    ${s.mailConfigured ? '<div class="f"><label>Send a test e-mail to</label><div style="display:flex;gap:8px"><input id="tm" type="email" placeholder="you@company.com" style="flex:1"><button class="btn" id="tmb" type="button">Send test</button></div></div>' : ''}
+    <hr style="border:0;border-top:1px solid var(--line);margin:20px 0">
     <b>QR link address</b>
     <p class="sub">Phones must be able to open this address, so it must be this PC's network IP (not "localhost"). Everyone has to be on the same Wi-Fi/LAN as this PC. If you change it, <b>reprint the QR labels</b> — old stickers keep the old address.</p>
     <div class="f"><label>Detected automatically</label><div class="mono">${esc(s.detectedUrl)}</div>
@@ -691,6 +695,7 @@ async function vSettings() {
     <div class="actions"><button class="btn pri" id="sv">Save settings</button></div>
     <p class="sub" style="margin-top:18px">Currently, QR codes open: <span class="mono">${esc(s.activeUrl)}/scan?no=&lt;File No&gt;</span></p>
     </div>`;
+  if ($('#tmb')) $('#tmb').onclick = async () => { try { await api('/api/admin/mail/test', {method: 'POST', body: {to: $('#tm').value}}); toast('Test e-mail sent'); } catch (e) { $('#mm').textContent = e.message; } };
   $('#sv').onclick = async () => { try { S.settings = await api('/api/admin/settings', {method: 'PUT', body: {baseUrl: $('#bu').value, requireApproval: $('#ra').checked}}); toast('Saved'); vSettings(); load(true); } catch (e) { $('#mm').textContent = e.message; } };
 }
 

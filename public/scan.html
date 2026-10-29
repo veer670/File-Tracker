@@ -85,6 +85,8 @@ function render() {
         <div><label>Department <i>*</i></label><input name="department" required maxlength="80" value="${esc(saved.department)}"></div>
       </div>
       <label>Mob No <i>*</i></label><input name="phone" type="tel" inputmode="tel" required maxlength="20" value="${esc(saved.phone)}" autocomplete="tel">
+      <label>Mail ID <i>*</i></label><input name="email" type="email" inputmode="email" required maxlength="100" placeholder="name@company.com" value="${esc(saved.email)}" autocomplete="email" autocapitalize="off">
+      <div class="sub" style="margin-top:4px">You will get an e-mail when the file is handed over and again when it is returned.</div>
       <label>Purpose <span style="font-weight:400;color:var(--mute)">(optional)</span></label><textarea name="purpose" maxlength="300" placeholder="Why do you need this file?"></textarea>
       <label>Expected return date <span style="font-weight:400;color:var(--mute)">(optional)</span></label><input name="dueDate" type="date" min="${new Date().toISOString().slice(0,10)}">
       <div id="err"></div>
@@ -101,7 +103,7 @@ async function submit(e) {
     const r = await fetch('/api/public/request', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data)});
     const j = await r.json();
     if (!r.ok) throw new Error(j.error || 'Something went wrong');
-    localStorage.setItem(KEY, JSON.stringify({name:data.name, empId:data.empId, department:data.department, phone:data.phone}));
+    localStorage.setItem(KEY, JSON.stringify({name:data.name, empId:data.empId, department:data.department, phone:data.phone, email:data.email}));
     const out = j.status === 'issued';
     $('#root').innerHTML = `<div class="card ok"><div class="tick">✓</div>
       <b>${out ? 'File taken — recorded' : 'Request submitted'}</b><div class="ref">${esc(j.ref)}</div>
