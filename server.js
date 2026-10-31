@@ -13,7 +13,7 @@ const os = require('os');
 const crypto = require('crypto');
 const { Readable } = require('stream');
 
-const BUILD = '2026-10-28 · v11 (e-mail)';
+const BUILD = '2026-10-28 · v11.1 (e-mail)';
 const PORT = Number(process.env.PORT) || 3000;
 const ADMIN_PIN = String(process.env.ADMIN_PIN || 'admin123');
 const DATA_DIR = path.join(__dirname, 'data');
@@ -168,13 +168,13 @@ function getMailer() {
     const port = Number(process.env.SMTP_PORT) || 587;
     transporter = require('nodemailer').createTransport({
       host: process.env.SMTP_HOST, port, secure: port === 465,
-      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+      auth: { user: String(process.env.SMTP_USER).trim(), pass: String(process.env.SMTP_PASS).replace(/\s+/g, '') },
       connectionTimeout: 8000, greetingTimeout: 8000, socketTimeout: 10000,
     });
   }
   return transporter;
 }
-const mailFrom = () => process.env.MAIL_FROM || `"Homeland File Tracker" <${process.env.SMTP_USER}>`;
+const mailFrom = () => (process.env.MAIL_FROM || `"Homeland File Tracker" <${String(process.env.SMTP_USER).trim()}>`).trim();
 const stamp = (iso) => new Date(iso).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 const hx = (x) => String(x == null ? '' : x).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 async function sendMail(to, subject, html) {
